@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Quản trị — Halloween iNET 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="admin.css?v=3">
+</head>
+<body>
+  <!-- Đăng nhập -->
+  <main class="login" id="login" hidden>
+    <form class="login-card" id="login-form" novalidate>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><b>Halloween iNET 2026</b><small>Trang quản trị</small></div></div>
+      <h1>Đăng nhập</h1>
+      <label class="field"><span>Tên đăng nhập</span><input name="username" id="lg-user" autocomplete="username" required maxlength="64"></label>
+      <label class="field"><span>Mật khẩu</span><input name="password" id="lg-pass" type="password" autocomplete="current-password" required maxlength="200"></label>
+      <p class="form-error" id="lg-error" role="alert"></p>
+      <button class="btn btn-primary btn-block" type="submit" id="lg-submit">Đăng nhập</button>
+      <p class="hint">Phiên đăng nhập tự hết hạn sau 12 giờ. Nhập sai 5 lần, tài khoản sẽ bị tạm khoá 15 phút.</p>
+    </form>
+  </main>
+
+  <!-- Đổi mật khẩu bắt buộc -->
+  <main class="login" id="pwchange" hidden>
+    <form class="login-card" id="pw-form" novalidate>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><b>Halloween iNET 2026</b><small>Trang quản trị</small></div></div>
+      <h1>Đổi mật khẩu</h1>
+      <p class="hint">Đây là lần đăng nhập đầu tiên (hoặc mật khẩu vừa được cấp lại). Vui lòng đặt mật khẩu mới.</p>
+      <label class="field"><span>Mật khẩu hiện tại</span><input id="pw-cur" type="password" autocomplete="current-password" required></label>
+      <label class="field"><span>Mật khẩu mới</span><input id="pw-new" type="password" autocomplete="new-password" required minlength="10"></label>
+      <label class="field"><span>Nhập lại mật khẩu mới</span><input id="pw-new2" type="password" autocomplete="new-password" required minlength="10"></label>
+      <p class="hint">Ít nhất 10 ký tự, có chữ thường, chữ hoa và chữ số.</p>
+      <p class="form-error" id="pw-error" role="alert"></p>
+      <button class="btn btn-primary btn-block" type="submit">Lưu mật khẩu</button>
+    </form>
+  </main>
+
+  <!-- Khung chính -->
+  <div class="shell" id="shell" hidden>
+    <aside class="side" id="side">
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div><b>Halloween iNET</b><small>Quản trị chiến dịch</small></div></div>
+      <nav class="nav" id="nav" aria-label="Điều hướng">
+        <a href="#/dashboard" data-page="dashboard">Tổng quan</a>
+        <a href="#/players" data-page="players">Người chơi</a>
+        <a href="#/sessions" data-page="sessions">Lượt chơi</a>
+        <a href="#/coupons" data-page="coupons">Coupon</a>
+        <a href="#/settings" data-page="settings">Cấu hình game</a>
+        <a href="#/simulate" data-page="simulate">Mô phỏng độ khó</a>
+        <a href="#/integration" data-page="integration">Tích hợp Portal</a>
+        <a href="#/audit" data-page="audit">Nhật ký thao tác</a>
+        <a href="#/admins" data-page="admins" data-role="superadmin">Tài khoản &amp; dữ liệu</a>
+      </nav>
+      <div class="side-foot">
+        <div class="me" id="me-box"></div>
+        <div class="side-actions">
+          <button class="btn btn-ghost btn-sm" type="button" id="btn-theme">Giao diện tối</button>
+          <button class="btn btn-ghost btn-sm" type="button" id="btn-logout">Đăng xuất</button>
+        </div>
+      </div>
+    </aside>
+    <div class="main">
+      <header class="top">
+        <button class="btn btn-ghost btn-sm menu-btn" type="button" id="btn-menu" aria-controls="side" aria-expanded="false">Menu</button>
+        <h1 class="page-title" id="page-title">Tổng quan</h1>
+        <div class="top-right">
+          <span class="pill" id="camp-pill"></span>
+          <span class="live" id="live-pill" title="Kết nối realtime"><i></i><span>Realtime</span></span>
+        </div>
+      </header>
+      <div class="banner-warn" id="env-warn" hidden></div>
+      <div class="view" id="view"></div>
+    </div>
+  </div>
+
+  <!-- Ngăn kéo chi tiết -->
+  <div class="drawer-wrap" id="drawer" hidden>
+    <div class="drawer-backdrop" data-close-drawer></div>
+    <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+      <header class="drawer-head"><h2 id="drawer-title"></h2><button class="btn btn-ghost btn-sm" type="button" data-close-drawer>Đóng</button></header>
+      <div class="drawer-body" id="drawer-body"></div>
+    </section>
+  </div>
+
+  <!-- Hộp thoại -->
+  <div class="dialog-wrap" id="dialog" hidden>
+    <form class="dialog" id="dialog-form" role="dialog" aria-modal="true" aria-labelledby="dialog-title" novalidate>
+      <h2 id="dialog-title"></h2>
+      <div id="dialog-body"></div>
+      <p class="form-error" id="dialog-error" role="alert"></p>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </form>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="/shared/engine.js?v=3"></script>
+  <script src="charts.js?v=3"></script>
+  <script src="admin.js?v=3"></script>
+</body>
+</html>

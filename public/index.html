@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2a0904">
+  <meta name="robots" content="noindex">
+  <title>Đập Bí Ngô — Halloween iNET 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
+  <link rel="stylesheet" href="/css/game.css?v=4">
+</head>
+<body>
+<div id="app" class="app" data-screen="boot">
+
+  <!-- Nền: thay bằng ảnh thiết kế qua /assets/assets.json (background.home / background.game) -->
+  <div class="bg" aria-hidden="true">
+    <div class="bg-img"></div>
+    <div class="bg-sky"></div>
+    <div class="bg-moon"></div>
+    <div class="bg-stars"></div>
+    <svg class="bg-hills" viewBox="0 0 1200 260" preserveAspectRatio="none">
+      <path d="M0 170 Q140 110 280 150 T560 140 T860 120 T1200 150 V260 H0 Z" fill="#3d0c05"/>
+      <path d="M0 200 Q200 160 380 190 T760 180 T1200 195 V260 H0 Z" fill="#220602"/>
+      <g fill="#220602">
+        <path d="M120 196 v-26 a14 14 0 0 1 28 0 v26 z"/><path d="M180 200 v-18 h-8 v-8 h8 v-8 h8 v8 h8 v8 h-8 v18 z"/>
+        <path d="M980 194 v-30 a16 16 0 0 1 32 0 v30 z"/><path d="M1060 198 v-20 h-8 v-8 h8 v-9 h8 v9 h8 v8 h-8 v20 z"/>
+        <path d="M600 186 l-4 -40 l-18 -6 l18 2 l2 -22 l4 22 l16 -10 l-14 16 l4 38 z"/>
+      </g>
+    </svg>
+    <div class="bg-fog"></div>
+    <div class="bats"><i></i><i></i><i></i></div>
+  </div>
+
+  <!-- ===================== KHỞI ĐỘNG ===================== -->
+  <section class="screen scr-boot" id="scr-boot" aria-label="Đang tải">
+    <div class="loader"><div class="loader-pumpkin"></div><p>Đang triệu hồi bí ngô...</p></div>
+  </section>
+
+  <!-- ===================== CHƯA ĐĂNG NHẬP ===================== -->
+  <section class="screen scr-gate" id="scr-gate" aria-labelledby="gate-title">
+    <div class="card gate-card">
+      <div class="gate-mascot" data-mascot="scared"></div>
+      <h1 id="gate-title" class="h-title-sm">Halloween iNET</h1>
+      <p id="gate-text">Vui lòng đăng nhập Portal iNET để tham gia trò chơi.</p>
+      <a class="btn btn-primary" id="gate-portal" href="https://portal.inet.vn" target="_top" rel="noopener">Đến Portal iNET</a>
+      <form class="demo-form" id="demo-form" hidden>
+        <p class="demo-note">Chế độ chơi thử (chỉ bật ở môi trường test, dữ liệu không tính vào kết quả)</p>
+        <label class="field">
+          <span>Mã người chơi thử</span>
+          <input id="demo-id" name="demo-id" maxlength="24" autocomplete="off" placeholder="vd: tester01" pattern="[A-Za-z0-9_-]*">
+        </label>
+        <button class="btn btn-secondary" type="submit">Chơi thử</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===================== TRANG CHỦ ===================== -->
+  <section class="screen scr-home" id="scr-home" aria-labelledby="home-title">
+    <header class="topbar">
+      <div class="stat" title="Điểm cao nhất của bạn"><span class="stat-k">Kỷ lục</span><b id="h-best">0</b></div>
+      <div class="stat" title="Combo cao nhất của bạn"><span class="stat-k">Combo</span><b id="h-combo">x0</b></div>
+      <div class="stat stat-turns" title="Lượt chơi còn lại"><span class="stat-k">Lượt</span><b id="h-turns">3/3</b><span class="stat-sub" id="h-regen"></span></div>
+      <button class="icon-btn" id="btn-sound" type="button" aria-label="Tắt âm thanh" aria-pressed="true"></button>
+    </header>
+
+    <div class="home-main">
+      <div class="home-hero">
+        <div class="home-mascot" data-mascot="idle"></div>
+        <h1 class="h-title" id="home-title"><span id="t-title">ĐẬP BÍ NGÔ</span></h1>
+        <p class="h-sub" id="t-sub">Săn voucher Halloween cùng NÉT</p>
+      </div>
+      <p class="camp-status" id="camp-status" role="status"></p>
+      <div class="home-actions">
+        <button class="btn btn-primary btn-xl" id="btn-start" type="button">Bắt đầu</button>
+        <div class="row-2">
+          <button class="btn btn-secondary" id="btn-guide" type="button">Hướng dẫn</button>
+          <button class="btn btn-secondary" id="btn-coupons" type="button">Coupon của tôi</button>
+        </div>
+        <button class="btn btn-ghost" id="btn-board" type="button" hidden>Bảng vàng</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== MÀN CHƠI ===================== -->
+  <section class="screen scr-play" id="scr-play" aria-label="Màn chơi">
+    <header class="hud">
+      <div class="hud-score">
+        <span class="hud-k">Điểm</span>
+        <b id="g-score">0</b>
+      </div>
+      <div class="hud-mid">
+        <span class="lv" id="g-level">LV 1</span>
+      </div>
+      <div class="hud-right">
+        <div class="lives" id="g-lives" title="Trúng bom 2 lần là thua"></div>
+        <button class="icon-btn" id="btn-pause" type="button" aria-label="Tạm dừng"></button>
+      </div>
+    </header>
+    <div class="tierbar" id="g-tierbar" aria-hidden="true">
+      <div class="tier-track"><div class="tier-fill" id="g-tierfill"></div></div>
+      <div class="tier-marks" id="g-tiermarks"></div>
+    </div>
+    <div class="board-wrap" id="board-wrap">
+      <div class="combo" id="g-combo" aria-hidden="true">
+        <span class="combo-k">COMBO</span>
+        <b class="combo-n" id="g-combo-n">x2</b>
+        <span class="combo-praise" id="g-combo-praise"></span>
+        <i class="combo-timer"><i id="g-combo-bar"></i></i>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="banner" id="g-banner" aria-live="polite"></div>
+      <div class="countdown" id="g-count" aria-live="assertive"></div>
+      <div class="idle-warn" id="g-idle" role="alert" hidden></div>
+    </div>
+    <div class="flash" id="g-flash"></div>
+  </section>
+  <div class="hammer hm-skin" id="hammer" aria-hidden="true"></div>
+
+  <!-- ===================== TẠM DỪNG ===================== -->
+  <div class="overlay" id="ov-pause" role="dialog" aria-modal="true" aria-labelledby="pause-title" hidden>
+    <div class="card pause-card">
+      <h2 id="pause-title" class="card-title">Tạm dừng</h2>
+      <div class="pause-score"><span>Điểm hiện tại</span><b id="p-score">0</b></div>
+      <div class="pause-award" id="p-award"></div>
+      <div class="pause-actions" id="p-main">
+        <button class="btn btn-primary" id="btn-resume" type="button">Tiếp tục</button>
+        <button class="btn btn-danger" id="btn-quit" type="button">Kết thúc ngay</button>
+      </div>
+      <div class="pause-actions" id="p-confirm" hidden>
+        <p class="confirm-text" id="p-confirm-text"></p>
+        <button class="btn btn-danger" id="btn-quit-yes" type="button">Kết thúc &amp; nhận kết quả</button>
+        <button class="btn btn-ghost" id="btn-quit-no" type="button">Quay lại</button>
+      </div>
+      <button class="icon-btn pause-sound" id="btn-sound2" type="button" aria-label="Tắt âm thanh"></button>
+    </div>
+  </div>
+
+  <!-- ===================== GAME OVER ===================== -->
+  <div class="overlay ov-gameover" id="ov-gameover" hidden>
+    <div class="gameover">
+      <div class="go-mascot" data-mascot="scared"></div>
+      <p class="go-title" id="go-title">BÙM! Trúng bom rồi!</p>
+      <p class="go-big">GAME OVER</p>
+      <p class="go-sending" id="go-sending">Đang tính điểm...</p>
+    </div>
+  </div>
+
+  <!-- ===================== KẾT QUẢ ===================== -->
+  <div class="modal" id="md-result" role="dialog" aria-modal="true" aria-labelledby="res-title" hidden>
+    <div class="card result-card" id="res-body"></div>
+  </div>
+
+  <!-- ===================== HƯỚNG DẪN ===================== -->
+  <div class="modal" id="md-guide" role="dialog" aria-modal="true" aria-labelledby="guide-title" hidden>
+    <div class="card sheet">
+      <header class="sheet-head"><h2 id="guide-title" class="card-title">Hướng dẫn &amp; thể lệ</h2><button class="icon-btn close" type="button" data-close aria-label="Đóng"></button></header>
+      <div class="sheet-body" id="guide-body"></div>
+    </div>
+  </div>
+
+  <!-- ===================== COUPON CỦA TÔI ===================== -->
+  <div class="modal" id="md-coupons" role="dialog" aria-modal="true" aria-labelledby="cp-title" hidden>
+    <div class="card sheet">
+      <header class="sheet-head"><h2 id="cp-title" class="card-title">Coupon của tôi</h2><button class="icon-btn close" type="button" data-close aria-label="Đóng"></button></header>
+      <div class="sheet-body" id="cp-body"></div>
+    </div>
+  </div>
+
+  <!-- ===================== BẢNG VÀNG ===================== -->
+  <div class="modal" id="md-board" role="dialog" aria-modal="true" aria-labelledby="lb-title" hidden>
+    <div class="card sheet">
+      <header class="sheet-head"><h2 id="lb-title" class="card-title">Bảng vàng</h2><button class="icon-btn close" type="button" data-close aria-label="Đóng"></button></header>
+      <div class="sheet-body" id="lb-body"></div>
+    </div>
+  </div>
+
+  <!-- ===================== THÔNG BÁO CHUNG ===================== -->
+  <div class="modal" id="md-msg" role="dialog" aria-modal="true" aria-labelledby="msg-title" hidden>
+    <div class="card msg-card">
+      <div class="msg-mascot" data-mascot="idle"></div>
+      <h2 id="msg-title" class="card-title"></h2>
+      <p id="msg-text"></p>
+      <div class="msg-actions" id="msg-actions"></div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <div class="test-ribbon" id="test-ribbon" hidden>CHẾ ĐỘ TEST</div>
+</div>
+
+<script src="/shared/engine.js?v=4"></script>
+<script src="/js/art.js?v=4"></script>
+<script src="/js/audio.js?v=4"></script>
+<script src="/js/api.js?v=4"></script>
+<script src="/js/game.js?v=4"></script>
+</body>
+</html>
