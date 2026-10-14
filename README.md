@@ -14,7 +14,7 @@ Không phụ thuộc thư viện ngoài: chỉ cần **Node.js ≥ 22.13** (khuy
 npm start
 ```
 
-- Mở game: http://localhost:8080 (CHAY-GAME.bat bật `GUEST_LOGIN=true`: mỗi trình duyệt là 1 người chơi, như chơi thật).
+- Mở game: http://localhost:8080 (mặc định vào là chơi: mỗi trình duyệt là 1 người chơi; khi Portal gửi token thì dùng tài khoản Portal).
 - Mở admin: http://localhost:8080/hlw-admin-quantri128/ → tài khoản `admin`, mật khẩu tạm nằm trong `data/INITIAL_ADMIN_PASSWORD.txt` (bắt buộc đổi ở lần đăng nhập đầu, sau đó xoá file này).
 - Muốn xem dashboard có số liệu: `npm run seed-demo` (tạo 300 người chơi giả, gắn cờ test, xoá được bằng 1 nút trong Admin).
 - Thử luồng đăng nhập giống Portal: `npm run portal-token -- KH123456` rồi mở link được in ra.

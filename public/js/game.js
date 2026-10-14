@@ -258,19 +258,7 @@
       portal.href = '#';
       portal.onclick = function (e) { e.preventDefault(); location.reload(); };
     }
-    $('demo-form').hidden = !(App.cfg && App.cfg.demo);
   }
-
-  $('demo-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    Sound.unlock();
-    var btn = this.querySelector('button');
-    btn.classList.add('is-loading');
-    API.post('/api/auth/demo', { id: $('demo-id').value.trim(), device: deviceInfo() }).then(function (d) {
-      API.setToken(d.accessToken);
-      return enterHome();
-    }).catch(function (err) { toast(err.message, null, 'bad'); }).then(function () { btn.classList.remove('is-loading'); });
-  });
 
   // Portal có thể gửi token qua postMessage thay vì đặt trên URL.
   window.addEventListener('message', function (ev) {
@@ -1441,7 +1429,6 @@
         body.innerHTML = '<p class="cp-empty">Bạn chưa có voucher nào.' + (first ? ' Đạt <b>' + first.score + ' điểm</b> để nhận voucher đầu tiên!' : '') + '</p>';
         return;
       }
-      var newestId = list[0].id;
       var html = '<div class="cp-list">' + list.map(function (c) {
         var t = rewards.find(function (x) { return x.id === c.tierId; }) || { id: c.tierId, discount: c.discount, product: c.product, url: c.url };
         var st = c.status, off = st !== 'active';
@@ -1449,7 +1436,7 @@
           ? '<button class="cp-code" type="button" data-copy="' + c.id + '" title="Chạm để sao chép">' + esc(c.code) + '</button>'
           : '<span class="cp-code is-wait">' + esc(STATUS_TEXT[st] || 'Đang tạo mã') + '</span>';
         var desc = 'Đăng ký mới / gia hạn / nâng cấp dịch vụ ' + (t.product || c.product || '') + (st === 'redeemed' ? ' · đã sử dụng' : st === 'expired' ? ' · đã hết hạn' : '');
-        var got = '<span class="cp-time' + (c.id === newestId ? ' is-new' : '') + '" title="Thời điểm nhận voucher">' + (c.id === newestId ? '<b>Mới nhất</b> · ' : '') + fmtTime(c.createdAt) + ' ' + fmtDate(c.createdAt) + '</span>';
+        var got = '<span class="cp-time" title="Thời điểm nhận voucher">' + fmtTime(c.createdAt) + ' ' + fmtDate(c.createdAt) + '</span>';
         return '<div class="cp-row"><div class="voucher cp-voucher' + (off ? ' muted' : '') + '">' + got +
           '<div class="v-pct">' + (t.discount || c.discount || 0) + '%<small>GIẢM</small></div>' +
           '<div class="cp-main">' + codeHtml + '<div class="v-meta">' + esc(desc) + '</div></div></div>' +

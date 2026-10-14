@@ -495,9 +495,6 @@ button, input { font: inherit; }
 .cp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .cp-voucher { padding: 18px 18px 12px; }
 .cp-time { position: absolute; top: -11px; right: 14px; padding: 1px 10px; border-radius: 999px; border: 2px solid var(--ink); background: var(--bone); color: var(--ink); font-size: .76rem; font-weight: 800; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cp-time.is-new { background: var(--slime); }
-.cp-time b { font-weight: 800; color: var(--ink); }
-.cp-time.is-new { color: var(--ink); }
 .cp-voucher .v-pct { width: 6.4rem; flex: none; }
 .cp-main { display: grid; gap: 4px; min-width: 0; }
 .cp-code { justify-self: start; max-width: 100%; padding: 2px 10px; border-radius: 10px; border: 2px dashed rgba(42, 11, 5, .55); background: rgba(255, 255, 255, .35); color: var(--ink); font: inherit; font-weight: 800; font-size: 1.35rem; letter-spacing: .05em; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; text-align: left; user-select: text; -webkit-user-select: text; }

@@ -71,9 +71,9 @@ const config = {
   COUPON_API_KEY: E.COUPON_API_KEY || '',
   COUPON_API_TIMEOUT: parseInt(E.COUPON_API_TIMEOUT || '8000', 10),
 
-  ALLOW_DEMO_LOGIN: bool(E.ALLOW_DEMO_LOGIN, !isProd),
+  ALLOW_DEMO_LOGIN: bool(E.ALLOW_DEMO_LOGIN, false),
   // Đăng nhập không qua Portal: mỗi trình duyệt tự có 1 tài khoản người chơi THẬT (không gắn cờ test)
-  GUEST_LOGIN: bool(E.GUEST_LOGIN, false),
+  GUEST_LOGIN: bool(E.GUEST_LOGIN, true),
   // Đường dẫn trang quản trị (khó đoán). Chỉ chữ, số, gạch ngang.
   ADMIN_PATH: String(E.ADMIN_PATH || 'hlw-admin-quantri128').replace(/[^A-Za-z0-9_-]/g, '') || 'hlw-admin-quantri128',
   PLAYER_TOKEN_TTL_H: parseFloat(E.PLAYER_TOKEN_TTL_H || '12'),
