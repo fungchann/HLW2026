@@ -1164,6 +1164,7 @@
   function onDeath(t) {
     G.state = 'ending';
     stopLoop();
+    $('g-idle').hidden = true;
     render(t);
     setTimeout(function () { Sound.play('gameover'); }, 550);
     var titles = (App.me && App.me.guide && App.me.guide.gameOver) || ['BÙM! Trúng bom rồi!', 'Ối dồi ôi, bom nổ tung!', 'Bom không phải để đập đâu!'];

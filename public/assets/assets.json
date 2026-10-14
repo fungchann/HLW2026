@@ -8,10 +8,10 @@
     "gameMobile": ""
   },
   "mascot": {
-    "idle": "/assets/img/mascot.png",
-    "happy": "",
-    "scared": "",
-    "sad": ""
+    "idle": "/assets/img/mascot-dong-vien.png",
+    "happy": "/assets/img/mascot-vui-mung.png",
+    "scared": "/assets/img/mascot-hoang-hot.png",
+    "sad": "/assets/img/mascot-buon.png"
   },
   "items": {
     "pumpkin": {
