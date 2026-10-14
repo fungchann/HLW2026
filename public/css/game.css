@@ -602,19 +602,28 @@ button, input { font: inherit; }
    giữa tiêu đề và hàng bí ngô, giữa con cú và bảng 40%. Đơn vị cqw/cqh = % kích thước ảnh. */
 .app.home-art .home-hero, .app.home-art #btn-board { display: none; }
 .app.home-art .topbar { justify-content: flex-end; position: relative; z-index: 2; }
+/* Màn ngang (từ 4:3 trở lên): hiện TRỌN ảnh, phần thừa 2 bên/trên dưới lấp bằng chính ảnh làm mờ.
+   Màn dọc (điện thoại, chưa có ảnh dọc): phủ kín, cắt 2 bên. */
 .app.home-art .home-main {
   position: absolute; left: 50%; top: 50%; display: block;
-  width: max(100vw, 177.78vh); height: max(100vh, 56.25vw);
+  width: min(100vw, 177.78vh); height: min(100vh, 56.25vw);
   transform: translate(-50%, -50%); container-type: size; pointer-events: none;
+  background: var(--bg-home) center / 100% 100% no-repeat;
+  box-shadow: 0 0 70px 30px rgba(10, 2, 0, .55);
 }
-@supports (height: 100dvh) { .app.home-art .home-main { width: max(100vw, 177.78dvh); height: max(100dvh, 56.25vw); } }
+@supports (height: 100dvh) { .app.home-art .home-main { width: min(100vw, 177.78dvh); height: min(100dvh, 56.25vw); } }
+@media (max-aspect-ratio: 4/3) {
+  .app.home-art .home-main { width: max(100vw, 177.78vh); height: max(100vh, 56.25vw); }
+  @supports (height: 100dvh) { .app.home-art .home-main { width: max(100vw, 177.78dvh); height: max(100dvh, 56.25vw); } }
+}
+.app.home-art[data-screen="home"] .bg-img { inset: -40px; filter: blur(22px) brightness(.55) saturate(1.1); }
 .app.home-art .home-actions {
   position: absolute; left: 50%; top: 52%; transform: translateX(-50%);
-  width: min(24cqw, 90vw); gap: max(10px, 1cqw); pointer-events: auto;
+  width: min(max(340px, 24cqw), 92vw); gap: max(10px, 1cqw); pointer-events: auto;
 }
 .app.home-art .home-actions .btn-xl { min-height: max(60px, 4.6cqw); font-size: max(1.45rem, 1.8cqw); padding-inline: .6em; border-radius: max(18px, 1.1cqw); }
 .app.home-art .row-2 { gap: max(10px, .8cqw); }
-.app.home-art .row-2 .btn { min-height: max(52px, 3.7cqw); font-size: max(1.12rem, 1.2cqw); }
+.app.home-art .row-2 .btn { min-height: max(52px, 3.7cqw); font-size: max(1.08rem, 1.2cqw); white-space: nowrap; padding-inline: .4em; }
 .app.home-art .camp-status { position: absolute; left: 50%; top: calc(52% - max(48px, 3.2cqw)); transform: translateX(-50%); width: max-content; max-width: 90vw; pointer-events: auto; }
 .app.home-art .camp-status.is-live { display: none; }
 @media (max-width: 700px) { .app.home-art .topbar { justify-content: center; } }
