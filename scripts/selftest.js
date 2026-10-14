@@ -358,8 +358,9 @@ async function playSession(token, targetScore, opts) {
       assert.strictEqual(st.status, 200, JSON.stringify(st.data));
       backdate(st.data.sessionId, 20000);
       const ev = [];
-      for (let i = 0; i < 60; i++) ev.push([5000 + i * 15, i % 9]);
-      r = await api('POST', '/api/game/sync', { sid: st.data.sessionId, base: 0, ev, gt: 6000, paused: false }, { token: gt });
+      // dồn dập trong 1 giây đầu (chưa có bom) để kết quả không phụ thuộc vào việc trúng bom
+      for (let i = 0; i < 60; i++) ev.push([1000 + i * 15, i % 9]);
+      r = await api("POST", "/api/game/sync", { sid: st.data.sessionId, base: 0, ev, gt: 2000, paused: false }, { token: gt });
       assert.strictEqual(r.status, 200);
       assert.strictEqual(r.data.ended, true, 'máy chủ dừng lượt ngay');
       assert.strictEqual(r.data.result.award.status, 'invalid');
