@@ -166,7 +166,7 @@ button, input { font: inherit; }
 .loader-pumpkin { width: 74px; height: 64px; margin: 0 auto 12px; border-radius: 45% 45% 40% 40%; border: 4px solid var(--ink); background: radial-gradient(circle at 35% 35%, var(--orange-l), var(--orange) 45%, var(--orange-d)); box-shadow: 0 6px 0 var(--ink); animation: hop .7s var(--ease-out) infinite alternate; }
 .gate-card { width: min(560px, 100%); text-align: center; }
 .gate-card p { color: var(--muted); font-weight: 600; margin: 0 0 16px; }
-.gate-mascot, .msg-mascot { width: 116px; margin: -72px auto 0; }
+.gate-mascot, .msg-mascot { width: 130px; margin: -80px auto 0; }
 .demo-form { margin-top: 18px; padding-top: 16px; border-top: 2px dashed var(--line); display: grid; gap: 10px; }
 .demo-note { font-size: .9rem; margin: 0 !important; }
 .field { display: grid; gap: 4px; text-align: left; font-weight: 700; font-size: .95rem; }
@@ -409,7 +409,7 @@ button, input { font: inherit; }
 .go-sending { color: var(--muted); font-weight: 700; margin: 8px 0 0; }
 
 .result-card { width: min(640px, 100%); text-align: center; display: grid; gap: 12px; padding-top: 18px; }
-.res-mascot { width: 100px; margin: -64px auto -4px; }
+.res-mascot { width: 130px; margin: -86px auto -4px; }
 .res-title { margin: 0; font-size: clamp(1.25rem, 5vw, 1.55rem); line-height: 1.2; color: var(--bone); text-shadow: 0 2px 0 var(--ink); }
 .res-score { display: flex; align-items: baseline; justify-content: center; gap: 10px; flex-wrap: wrap; }
 .res-score b { font-size: clamp(3rem, 14vw, 4.2rem); line-height: 1; color: var(--gold); -webkit-text-stroke: 7px var(--ink); paint-order: stroke fill; text-shadow: 0 5px 0 var(--ink); }
@@ -569,7 +569,7 @@ button, input { font: inherit; }
 @media (max-height: 700px) {
   .result-card { gap: 9px; padding-bottom: 16px; }
   .res-score b { font-size: 3rem; }
-  .res-mascot { width: 86px; margin-top: -56px; }
+  .res-mascot { width: 110px; margin-top: -72px; }
   .round-btn .disc { width: 52px; height: 52px; }
   .btn { min-height: 48px; }
   #md-result { padding-top: calc(60px + var(--safe-t)); }
