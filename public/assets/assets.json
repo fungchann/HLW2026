@@ -2,7 +2,7 @@
   "_huong_dan": "Để trống = dùng hình/âm thanh mặc định. Điền đường dẫn file (đặt trong public/assets/img hoặc public/assets/audio) để thay thế. Xem public/assets/README.md",
   "logo": "",
   "background": {
-    "home": "/assets/img/bg-home-pc-v2.jpg",
+    "home": "/assets/img/bg-home-pc-v3.jpg",
     "homeMobile": "",
     "game": "",
     "gameMobile": ""
