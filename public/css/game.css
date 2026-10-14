@@ -597,33 +597,30 @@ button, input { font: inherit; }
 }
 @keyframes fade-only { from { opacity: 0; } }
 
-/* ------------------------------------------------------------------ màn chính dùng ảnh nền thiết kế (16:9)
-   .home-main được phủ đúng như ảnh nền (cover) nên vị trí nút luôn khớp với khoảng trống trên ảnh:
-   giữa tiêu đề và hàng bí ngô, giữa con cú và bảng 40%. Đơn vị cqw/cqh = % kích thước ảnh. */
+/* ------------------------------------------------------------------ màn chính dùng ảnh nền thiết kế 1920×870
+   PC: ảnh co giãn phủ đúng khung (có thể giãn ngang/dọc một chút), không cắt. 3 nút đặt theo % ảnh nên luôn
+   nằm đúng vị trí đã chừa trên thiết kế. Đơn vị cqw/cqh = % chiều rộng/cao của ảnh. */
 .app.home-art .home-hero, .app.home-art #btn-board { display: none; }
 .app.home-art .topbar { justify-content: flex-end; position: relative; z-index: 2; }
-/* Màn ngang (từ 4:3 trở lên): hiện TRỌN ảnh, phần thừa 2 bên/trên dưới lấp bằng chính ảnh làm mờ.
-   Màn dọc (điện thoại, chưa có ảnh dọc): phủ kín, cắt 2 bên. */
 .app.home-art .home-main {
-  position: absolute; left: 50%; top: 50%; display: block;
-  width: min(100vw, 177.78vh); height: min(100vh, 56.25vw);
-  transform: translate(-50%, -50%); container-type: size; pointer-events: none;
+  position: absolute; inset: 0; display: block; container-type: size; pointer-events: none;
   background: var(--bg-home) center / 100% 100% no-repeat;
-  box-shadow: 0 0 70px 30px rgba(10, 2, 0, .55);
 }
-@supports (height: 100dvh) { .app.home-art .home-main { width: min(100vw, 177.78dvh); height: min(100dvh, 56.25vw); } }
-@media (max-aspect-ratio: 4/3) {
-  .app.home-art .home-main { width: max(100vw, 177.78vh); height: max(100vh, 56.25vw); }
-  @supports (height: 100dvh) { .app.home-art .home-main { width: max(100vw, 177.78dvh); height: max(100dvh, 56.25vw); } }
-}
-.app.home-art[data-screen="home"] .bg-img { inset: -40px; filter: blur(22px) brightness(.55) saturate(1.1); }
 .app.home-art .home-actions {
-  position: absolute; left: 50%; top: 52%; transform: translateX(-50%);
-  width: min(max(340px, 24cqw), 92vw); gap: max(10px, 1cqw); pointer-events: auto;
+  position: absolute; left: 34.1%; top: 53.1%; width: 33.6%;
+  grid-template-rows: 9cqh 7.7cqh; row-gap: 3.8cqh; gap: 3.8cqh 0; pointer-events: auto;
 }
-.app.home-art .home-actions .btn-xl { min-height: max(60px, 4.6cqw); font-size: max(1.45rem, 1.8cqw); padding-inline: .6em; border-radius: max(18px, 1.1cqw); }
-.app.home-art .row-2 { gap: max(10px, .8cqw); }
-.app.home-art .row-2 .btn { min-height: max(52px, 3.7cqw); font-size: max(1.08rem, 1.2cqw); white-space: nowrap; padding-inline: .4em; }
-.app.home-art .camp-status { position: absolute; left: 50%; top: calc(52% - max(48px, 3.2cqw)); transform: translateX(-50%); width: max-content; max-width: 90vw; pointer-events: auto; }
+.app.home-art .home-actions .btn-xl { width: 100%; min-height: 0; height: 100%; font-size: clamp(1.2rem, 1.8cqw, 2.4rem); padding: 0 .6em; border-radius: clamp(14px, 1cqw, 22px); }
+.app.home-art .row-2 { column-gap: 1.5cqw; }
+.app.home-art .row-2 .btn { min-height: 0; height: 100%; font-size: clamp(1rem, 1.2cqw, 1.6rem); white-space: nowrap; padding-inline: .4em; }
+.app.home-art .camp-status { position: absolute; left: 50%; top: calc(53.1% - 3.4em); transform: translateX(-50%); width: max-content; max-width: 90vw; pointer-events: auto; }
 .app.home-art .camp-status.is-live { display: none; }
-@media (max-width: 700px) { .app.home-art .topbar { justify-content: center; } }
+/* Màn dọc (điện thoại, khi chưa có ảnh dọc): ảnh phủ kín theo chiều cao, cắt 2 bên; nút canh giữa kích thước cố định */
+@media (max-aspect-ratio: 4/3) {
+  .app.home-art .home-main { inset: auto; left: 50%; top: 50%; width: max(100vw, 220.69vh); height: max(100vh, 45.31vw); transform: translate(-50%, -50%); }
+  .app.home-art .home-actions { left: 50%; transform: translateX(-50%); width: min(92vw, 420px); grid-template-rows: auto auto; gap: 12px; }
+  .app.home-art .home-actions .btn-xl { height: auto; min-height: 64px; font-size: 1.5rem; }
+  .app.home-art .row-2 { column-gap: 10px; }
+  .app.home-art .row-2 .btn { height: auto; min-height: 54px; font-size: 1.05rem; }
+  .app.home-art .topbar { justify-content: center; }
+}
