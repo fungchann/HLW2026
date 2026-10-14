@@ -635,12 +635,22 @@ button, input { font: inherit; }
 .app.home-art .row-2 .btn { min-height: 0; height: 100%; font-size: clamp(1rem, 1.2cqw, 1.6rem); white-space: nowrap; padding-inline: .4em; }
 .app.home-art .camp-status { position: absolute; left: 50.9%; top: calc(52.2% - 3.4em); transform: translateX(-50%); width: max-content; max-width: 90vw; pointer-events: auto; }
 .app.home-art .camp-status.is-live { display: none; }
-/* Màn dọc (điện thoại, khi chưa có ảnh dọc): ảnh phủ kín theo chiều cao, cắt 2 bên; nút canh giữa kích thước cố định */
-@media (max-aspect-ratio: 4/3) {
-  .app.home-art .home-main { inset: auto; left: 50%; top: 50%; width: max(100vw, 220.69vh); height: max(100vh, 45.31vw); transform: translate(-50%, -50%); }
-  .app.home-art .home-actions { left: 50%; transform: translateX(-50%); width: min(92vw, 420px); grid-template-rows: auto auto; gap: 12px; }
-  .app.home-art .home-actions .btn-xl { height: auto; min-height: 64px; font-size: 1.5rem; }
+/* Màn dọc (điện thoại): ảnh mobile 1080×1920 phủ kín (giữ tỉ lệ, cắt bớt mép nếu máy dài hơn 9:16).
+   3 nút nằm trong khoảng trống giữa tiêu đề và con cú/bảng 40% (khoảng 45%–61% chiều cao ảnh). */
+@media (max-aspect-ratio: 1/1) {
+  .app.home-art .home-main { inset: auto; left: 50%; top: 50%; width: max(100vw, 56.25vh); height: max(100vh, 177.78vw); transform: translate(-50%, -50%); }
+  @supports (height: 100dvh) { .app.home-art .home-main { width: max(100vw, 56.25dvh); height: max(100dvh, 177.78vw); } }
+  .app.home-art .home-actions { left: 50%; top: 45.5%; transform: translateX(-50%); width: min(70cqw, 92vw, 460px); grid-template-rows: auto auto; gap: max(10px, 1.3cqh); }
+  .app.home-art .home-actions .btn-xl { height: auto; min-height: max(58px, 7cqh); font-size: clamp(1.35rem, 6cqw, 2rem); }
   .app.home-art .row-2 { column-gap: 10px; }
-  .app.home-art .row-2 .btn { height: auto; min-height: 54px; font-size: 1.05rem; }
+  .app.home-art .row-2 .btn { height: auto; min-height: max(50px, 5.6cqh); font-size: clamp(1rem, 4.2cqw, 1.3rem); }
+  .app.home-art .camp-status { top: calc(45.5% - 3.2em); }
   .app.home-art .topbar { justify-content: center; }
+}
+/* Máy tính bảng / khung gần vuông (rộng hơn 9:14): hiện trọn ảnh dọc, 2 bên lấp bằng chính ảnh làm mờ */
+@media (max-aspect-ratio: 1/1) and (min-aspect-ratio: 9/14) {
+  .app.home-art .home-main { width: min(100vw, 56.25vh); height: min(100vh, 177.78vw); box-shadow: 0 0 60px 24px rgba(10, 2, 0, .55); }
+  @supports (height: 100dvh) { .app.home-art .home-main { width: min(100vw, 56.25dvh); height: min(100dvh, 177.78vw); } }
+  .app.home-art .home-main { background-size: 100% 100%; }
+  .app.home-art[data-screen="home"] .bg-img { inset: -40px; filter: blur(22px) brightness(.55); }
 }

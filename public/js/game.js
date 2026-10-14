@@ -138,15 +138,21 @@
       App.assets = a;
       Art.overrides = a;
       Sound.setFiles(a.audio || {});
+      // Màn dọc (điện thoại) dùng ảnh mobile, màn ngang dùng ảnh PC; tự đổi khi xoay máy / đổi cỡ cửa sổ
       var bg = a.background || {};
-      var mobile = window.matchMedia && matchMedia('(max-width: 700px)').matches;
-      var home = (mobile && bg.homeMobile) || bg.home;
-      var game = (mobile && bg.gameMobile) || bg.game;
-      if (home) app.style.setProperty('--bg-home', 'url("' + encodeURI(home) + '")');
-      if (game) app.style.setProperty('--bg-game', 'url("' + encodeURI(game) + '")');
-      // Ảnh nền thiết kế màn chính đã có sẵn tiêu đề + mascot -> ẩn tiêu đề/mascot/khung cảnh vẽ sẵn, chỉ giữ 3 nút
-      if (home) app.classList.add('has-bg-home', 'home-art');
-      if (game) app.classList.add('has-bg-game');
+      var portrait = window.matchMedia ? matchMedia('(max-aspect-ratio: 1/1)') : null;
+      function applyBg() {
+        var mobile = !!(portrait && portrait.matches);
+        var home = (mobile && bg.homeMobile) || bg.home;
+        var game = (mobile && bg.gameMobile) || bg.game;
+        app.style.setProperty('--bg-home', home ? 'url("' + encodeURI(home) + '")' : 'none');
+        app.style.setProperty('--bg-game', game ? 'url("' + encodeURI(game) + '")' : 'none');
+        app.classList.toggle('has-bg-home', !!home);
+        app.classList.toggle('home-art', !!home);
+        app.classList.toggle('has-bg-game', !!game);
+      }
+      applyBg();
+      if (portrait) { if (portrait.addEventListener) portrait.addEventListener('change', applyBg); else if (portrait.addListener) portrait.addListener(applyBg); }
       var urls = [];
       (function walk(o) {
         if (!o || typeof o !== 'object') return;

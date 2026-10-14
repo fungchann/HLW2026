@@ -3,9 +3,9 @@
   "logo": "",
   "background": {
     "home": "/assets/img/bg-home-pc-v3.jpg",
-    "homeMobile": "",
-    "game": "",
-    "gameMobile": ""
+    "homeMobile": "/assets/img/bg-home-mobile.jpg",
+    "game": "/assets/img/bg-play-pc.jpg",
+    "gameMobile": "/assets/img/bg-play-mobile.jpg"
   },
   "mascot": {
     "idle": "/assets/img/mascot-dong-vien.png",
