@@ -1413,30 +1413,52 @@
 
   // ================================================================ coupon của tôi
   var STATUS_TEXT = { active: 'Chưa sử dụng', redeemed: 'Đã sử dụng', expired: 'Hết hạn', held: 'Đang xác minh', pending: 'Đang tạo mã', revoked: 'Đã thu hồi' };
+  // Chỉ hiện 3 voucher mới nhất; mã hiện thẳng trên voucher (tự lấy mã cho voucher chưa xem), nút Đăng ký đặt cạnh
+  var CP_SHOW = 3;
   function openCoupons() {
     track('coupons_open');
     var body = $('cp-body');
     body.innerHTML = '<p class="cp-empty">Đang tải...</p>';
     openModal('md-coupons');
+    var g = App.me.guide;
+    var rewards = g.tiers.filter(function (t) { return t.reward; }).sort(function (a, b) { return a.score - b.score; });
     API.get('/api/coupons').then(function (d) {
-      var g = App.me.guide;
-      var rewards = g.tiers.filter(function (t) { return t.reward; }).sort(function (a, b) { return a.score - b.score; });
-      var used = {};
-      var html = '<div class="cp-list">';
-      rewards.forEach(function (t) {
-        var list = d.coupons.filter(function (c) { return c.tierId === t.id; });
-        if (!list.length) {
-          html += '<div class="cp-item">' + voucherHtml(t, 'locked', 'Chưa nhận', 's-expired', null, 'Đạt ' + t.score + ' điểm để nhận') + '</div>';
-          return;
-        }
-        list.forEach(function (c) { used[c.id] = 1; html += couponItemHtml(c, t); });
-      });
-      d.coupons.forEach(function (c) { if (!used[c.id]) html += couponItemHtml(c, { id: c.tierId, label: c.label, product: c.product, discount: c.discount, url: c.url, short: c.short }); });
-      html += '</div><p class="res-note">' + (g.maxPerTier > 0 ? 'Mỗi tài khoản nhận tối đa ' + g.maxPerTier + ' voucher cho mỗi mốc. ' : 'Mỗi lượt chơi đạt mốc là nhận thêm 1 voucher. ') + 'Hạn dùng đến hết ' + fmtDate(g.couponExpiresAt) + '.</p>';
+      var list = d.coupons.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, CP_SHOW);
+      return Promise.all(list.map(function (c) {
+        if (c.code || !(c.status === 'active' || c.status === 'redeemed' || c.status === 'pending')) return c;
+        return API.post('/api/coupons/' + c.id + '/reveal', {}).then(function (r) { return Object.assign(c, r.coupon); }, function () { return c; });
+      }));
+    }).then(function (list) {
+      if (!list.length) {
+        var first = rewards[0];
+        body.innerHTML = '<p class="cp-empty">Bạn chưa có voucher nào.' + (first ? ' Đạt <b>' + first.score + ' điểm</b> để nhận voucher đầu tiên!' : '') + '</p>';
+        return;
+      }
+      var html = '<div class="cp-list">' + list.map(function (c) {
+        var t = rewards.find(function (x) { return x.id === c.tierId; }) || { id: c.tierId, discount: c.discount, product: c.product, url: c.url };
+        var st = c.status, off = st !== 'active';
+        var codeHtml = c.code
+          ? '<button class="cp-code" type="button" data-copy="' + c.id + '" title="Chạm để sao chép">' + esc(c.code) + '</button>'
+          : '<span class="cp-code is-wait">' + esc(STATUS_TEXT[st] || 'Đang tạo mã') + '</span>';
+        var desc = 'Đăng ký mới / gia hạn / nâng cấp dịch vụ ' + (t.product || c.product || '') + (st === 'redeemed' ? ' · đã sử dụng' : st === 'expired' ? ' · đã hết hạn' : '');
+        return '<div class="cp-row"><div class="voucher cp-voucher' + (off ? ' muted' : '') + '">' +
+          '<div class="v-pct">' + (t.discount || c.discount || 0) + '%<small>GIẢM</small></div>' +
+          '<div class="cp-main">' + codeHtml + '<div class="v-meta">' + esc(desc) + '</div></div></div>' +
+          '<button class="btn btn-gold cp-reg" type="button" data-reg="' + c.id + '"' + (st === 'active' ? '' : ' disabled') + '>Đăng ký</button></div>';
+      }).join('') + '</div><p class="cp-hsd">HSD: ' + fmtTime(g.couponExpiresAt) + ' ' + fmtDate(g.couponExpiresAt) + '</p>';
       body.innerHTML = html;
-      d.coupons.forEach(function (c) {
-        var btn = body.querySelector('[data-code="' + c.id + '"]');
-        if (btn) bindCodeButton(btn, c, null);
+      list.forEach(function (c) {
+        var cb = body.querySelector('[data-copy="' + c.id + '"]');
+        if (cb) cb.addEventListener('click', function () {
+          copyText(c.code).then(function (ok) {
+            if (!ok) return;
+            cb.classList.add('copied');
+            Sound.play('click');
+            toast('Đã sao chép mã ' + c.code, null, 'good', 'check');
+            track('coupon_copy', { couponId: c.id, tierId: c.tierId });
+            setTimeout(function () { cb.classList.remove('copied'); }, 1600);
+          });
+        });
         var reg = body.querySelector('[data-reg="' + c.id + '"]');
         if (reg) reg.addEventListener('click', function () {
           var t = rewards.find(function (x) { return x.id === c.tierId; }) || { id: c.tierId, url: c.url };
@@ -1444,19 +1466,6 @@
         });
       });
     }).catch(function (e) { body.innerHTML = '<p class="cp-empty">' + esc(e.message) + '</p>'; });
-  }
-
-  function couponItemHtml(c, t) {
-    var st = c.status;
-    var h = '<div class="cp-item">' + voucherHtml(t, st === 'active' ? '' : 'muted', STATUS_TEXT[st] || st, 's-' + st, c.expiresAt);
-    if (st === 'active' || st === 'redeemed') {
-      h += '<div class="cp-actions"><button class="' + (c.code ? 'code-btn' : 'btn btn-primary') + '" type="button" data-code="' + c.id + '">' +
-        (c.code ? '' : Art.ui('ticket') + 'Nhận mã') + '</button>' +
-        (st === 'active' ? '<button class="btn btn-gold" type="button" data-reg="' + c.id + '">Đăng ký</button>' : '') + '</div>';
-    } else if (st === 'pending') {
-      h += '<div class="cp-actions"><button class="btn btn-primary" type="button" data-code="' + c.id + '">' + Art.ui('ticket') + 'Nhận mã</button></div>';
-    }
-    return h + '</div>';
   }
 
   // ================================================================ bảng vàng

@@ -491,7 +491,27 @@ button, input { font: inherit; }
 .tier-table td:first-child { color: var(--gold); font-weight: 800; white-space: nowrap; }
 .tip { padding: 10px 12px; border-radius: 14px; background: rgba(255, 210, 63, .1); border: 2px dashed var(--gold); }
 
-.cp-list { display: grid; gap: 18px; padding-top: 6px; }
+.cp-list { display: grid; gap: 14px; padding-top: 6px; }
+.cp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.cp-voucher { padding: 12px 18px; }
+.cp-voucher .v-pct { width: 6.4rem; flex: none; }
+.cp-main { display: grid; gap: 4px; min-width: 0; }
+.cp-code { justify-self: start; max-width: 100%; padding: 2px 10px; border-radius: 10px; border: 2px dashed rgba(42, 11, 5, .55); background: rgba(255, 255, 255, .35); color: var(--ink); font: inherit; font-weight: 800; font-size: 1.35rem; letter-spacing: .05em; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; text-align: left; user-select: text; -webkit-user-select: text; }
+.cp-code:hover { background: rgba(255, 255, 255, .55); }
+.cp-code.copied { border-style: solid; border-color: #2f7d1e; background: rgba(140, 230, 90, .45); }
+.cp-code.is-wait { cursor: default; font-size: 1rem; letter-spacing: 0; border-style: solid; }
+.cp-reg { min-height: 56px; padding-inline: 1.2em; font-size: 1.05rem; }
+.cp-hsd { margin: 14px 0 0; text-align: center; font-weight: 700; color: var(--bone); }
+@media (max-width: 520px) {
+  .cp-row { gap: 8px; }
+  .cp-voucher { padding: 10px 10px 10px 14px; gap: 8px; }
+  .cp-voucher .v-pct { width: 3.3rem; font-size: 1.5rem; padding-right: 6px; }
+  .cp-voucher .v-pct small { font-size: .62rem; }
+  .cp-code { font-size: .82rem; letter-spacing: 0; padding: 1px 5px; border-width: 1.5px; }
+  .cp-voucher .v-meta { font-size: .74rem; }
+  .cp-reg { min-height: 48px; padding-inline: .7em; font-size: .92rem; }
+}
+
 .cp-item { display: grid; gap: 10px; }
 .cp-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: stretch; }
 .cp-actions .btn { min-height: 48px; font-size: 1rem; }
