@@ -195,7 +195,7 @@ function publicCoupon(c, s, withCode) {
 
 function listForPlayer(playerId) {
   const s = settings.current();
-  return db.all('SELECT * FROM coupons WHERE player_id = ? ORDER BY created_at DESC', playerId)
+  return db.all('SELECT * FROM coupons WHERE player_id = ? ORDER BY created_at DESC, id DESC', playerId)
     .filter((c) => c.status !== 'revoked')
     .map((c) => publicCoupon(c, s, !!c.revealed_at));
 }

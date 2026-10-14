@@ -1430,7 +1430,7 @@
     var g = App.me.guide;
     var rewards = g.tiers.filter(function (t) { return t.reward; }).sort(function (a, b) { return a.score - b.score; });
     API.get('/api/coupons').then(function (d) {
-      var list = d.coupons.slice().sort(function (a, b) { return b.createdAt - a.createdAt; }).slice(0, CP_SHOW);
+      var list = d.coupons.slice().sort(function (a, b) { return (b.createdAt - a.createdAt) || (b.id - a.id); }).slice(0, CP_SHOW);
       return Promise.all(list.map(function (c) {
         if (c.code || !(c.status === 'active' || c.status === 'redeemed' || c.status === 'pending')) return c;
         return API.post('/api/coupons/' + c.id + '/reveal', {}).then(function (r) { return Object.assign(c, r.coupon); }, function () { return c; });
@@ -1441,6 +1441,7 @@
         body.innerHTML = '<p class="cp-empty">Bạn chưa có voucher nào.' + (first ? ' Đạt <b>' + first.score + ' điểm</b> để nhận voucher đầu tiên!' : '') + '</p>';
         return;
       }
+      var newestId = list[0].id;
       var html = '<div class="cp-list">' + list.map(function (c) {
         var t = rewards.find(function (x) { return x.id === c.tierId; }) || { id: c.tierId, discount: c.discount, product: c.product, url: c.url };
         var st = c.status, off = st !== 'active';
@@ -1448,7 +1449,8 @@
           ? '<button class="cp-code" type="button" data-copy="' + c.id + '" title="Chạm để sao chép">' + esc(c.code) + '</button>'
           : '<span class="cp-code is-wait">' + esc(STATUS_TEXT[st] || 'Đang tạo mã') + '</span>';
         var desc = 'Đăng ký mới / gia hạn / nâng cấp dịch vụ ' + (t.product || c.product || '') + (st === 'redeemed' ? ' · đã sử dụng' : st === 'expired' ? ' · đã hết hạn' : '');
-        return '<div class="cp-row"><div class="voucher cp-voucher' + (off ? ' muted' : '') + '">' +
+        var got = '<span class="cp-time' + (c.id === newestId ? ' is-new' : '') + '" title="Thời điểm nhận voucher">' + (c.id === newestId ? '<b>Mới nhất</b> · ' : '') + fmtTime(c.createdAt) + ' ' + fmtDate(c.createdAt) + '</span>';
+        return '<div class="cp-row"><div class="voucher cp-voucher' + (off ? ' muted' : '') + '">' + got +
           '<div class="v-pct">' + (t.discount || c.discount || 0) + '%<small>GIẢM</small></div>' +
           '<div class="cp-main">' + codeHtml + '<div class="v-meta">' + esc(desc) + '</div></div></div>' +
           '<button class="btn btn-gold cp-reg" type="button" data-reg="' + c.id + '"' + (st === 'active' ? '' : ' disabled') + '>Đăng ký</button></div>';
