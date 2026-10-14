@@ -53,7 +53,10 @@ button, input { font: inherit; }
 .bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; background: radial-gradient(120% 80% at 50% 0%, var(--night-2) 0%, var(--night-1) 55%, var(--night-0) 100%); }
 .bg-img { position: absolute; inset: 0; background: var(--bg-home) center / cover no-repeat; }
 .app[data-screen="play"] .bg-img { background-image: var(--bg-game); }
-.app.has-bg .bg-sky, .app.has-bg .bg-moon, .app.has-bg .bg-stars, .app.has-bg .bg-hills, .app.has-bg .bats { display: none; }
+.app:not(.has-bg-home) .bg-img { display: none; }
+.app.has-bg-home:not([data-screen="play"]) :is(.bg-sky, .bg-moon, .bg-stars, .bg-hills, .bats, .bg-fog),
+.app.has-bg-game[data-screen="play"] :is(.bg-sky, .bg-moon, .bg-stars, .bg-hills, .bats) { display: none; }
+.app:not(.has-bg-game)[data-screen="play"] .bg-img { display: none; }
 .bg-sky { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 100%, rgba(255, 110, 30, .38), transparent 70%); }
 .bg-moon {
   position: absolute; width: min(42vw, 260px); aspect-ratio: 1; right: 8%; top: 6%;
@@ -593,3 +596,25 @@ button, input { font: inherit; }
   .overlay:not([hidden]) > .card, .modal:not([hidden]) > .card { animation: fade-only 150ms linear; }
 }
 @keyframes fade-only { from { opacity: 0; } }
+
+/* ------------------------------------------------------------------ màn chính dùng ảnh nền thiết kế (16:9)
+   .home-main được phủ đúng như ảnh nền (cover) nên vị trí nút luôn khớp với khoảng trống trên ảnh:
+   giữa tiêu đề và hàng bí ngô, giữa con cú và bảng 40%. Đơn vị cqw/cqh = % kích thước ảnh. */
+.app.home-art .home-hero, .app.home-art #btn-board { display: none; }
+.app.home-art .topbar { justify-content: flex-end; position: relative; z-index: 2; }
+.app.home-art .home-main {
+  position: absolute; left: 50%; top: 50%; display: block;
+  width: max(100vw, 177.78vh); height: max(100vh, 56.25vw);
+  transform: translate(-50%, -50%); container-type: size; pointer-events: none;
+}
+@supports (height: 100dvh) { .app.home-art .home-main { width: max(100vw, 177.78dvh); height: max(100dvh, 56.25vw); } }
+.app.home-art .home-actions {
+  position: absolute; left: 50%; top: 52%; transform: translateX(-50%);
+  width: min(24cqw, 90vw); gap: max(10px, 1cqw); pointer-events: auto;
+}
+.app.home-art .home-actions .btn-xl { min-height: max(60px, 4.6cqw); font-size: max(1.45rem, 1.8cqw); padding-inline: .6em; border-radius: max(18px, 1.1cqw); }
+.app.home-art .row-2 { gap: max(10px, .8cqw); }
+.app.home-art .row-2 .btn { min-height: max(52px, 3.7cqw); font-size: max(1.12rem, 1.2cqw); }
+.app.home-art .camp-status { position: absolute; left: 50%; top: calc(52% - max(48px, 3.2cqw)); transform: translateX(-50%); width: max-content; max-width: 90vw; pointer-events: auto; }
+.app.home-art .camp-status.is-live { display: none; }
+@media (max-width: 700px) { .app.home-art .topbar { justify-content: center; } }

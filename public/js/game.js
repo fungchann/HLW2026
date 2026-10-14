@@ -141,10 +141,12 @@
       var bg = a.background || {};
       var mobile = window.matchMedia && matchMedia('(max-width: 700px)').matches;
       var home = (mobile && bg.homeMobile) || bg.home;
-      var game = (mobile && bg.gameMobile) || bg.game || home;
+      var game = (mobile && bg.gameMobile) || bg.game;
       if (home) app.style.setProperty('--bg-home', 'url("' + encodeURI(home) + '")');
       if (game) app.style.setProperty('--bg-game', 'url("' + encodeURI(game) + '")');
-      if (home || game) app.classList.add('has-bg');
+      // Ảnh nền thiết kế màn chính đã có sẵn tiêu đề + mascot -> ẩn tiêu đề/mascot/khung cảnh vẽ sẵn, chỉ giữ 3 nút
+      if (home) app.classList.add('has-bg-home', 'home-art');
+      if (game) app.classList.add('has-bg-game');
       var urls = [];
       (function walk(o) {
         if (!o || typeof o !== 'object') return;
@@ -328,6 +330,7 @@
     var st = canPlayNow();
     var status = $('camp-status');
     var btn = $('btn-start');
+    status.classList.toggle('is-live', st.ok && c.status === 'live');
     if (!st.ok) {
       if (st.html) status.innerHTML = st.html; else status.textContent = st.text;
       btn.disabled = true;

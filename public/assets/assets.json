@@ -2,7 +2,7 @@
   "_huong_dan": "Để trống = dùng hình/âm thanh mặc định. Điền đường dẫn file (đặt trong public/assets/img hoặc public/assets/audio) để thay thế. Xem public/assets/README.md",
   "logo": "",
   "background": {
-    "home": "",
+    "home": "/assets/img/bg-home-pc.jpg",
     "homeMobile": "",
     "game": "",
     "gameMobile": ""
@@ -14,14 +14,42 @@
     "sad": ""
   },
   "items": {
-    "pumpkin": { "idle": "", "ko": "" },
-    "pumpkinCloth": { "idle": "", "hit1": "", "ko": "", "hat": "" },
-    "pumpkinIron": { "idle": "", "hit1": "", "hit2": "", "ko": "", "hat": "" },
-    "ghost": { "idle": "", "ko": "" },
-    "virus": { "idle": "", "ko": "" },
-    "potion": { "idle": "", "ko": "" },
-    "candy": { "idle": "", "ko": "" },
-    "bomb": { "idle": "" }
+    "pumpkin": {
+      "idle": "",
+      "ko": ""
+    },
+    "pumpkinCloth": {
+      "idle": "",
+      "hit1": "",
+      "ko": "",
+      "hat": ""
+    },
+    "pumpkinIron": {
+      "idle": "",
+      "hit1": "",
+      "hit2": "",
+      "ko": "",
+      "hat": ""
+    },
+    "ghost": {
+      "idle": "",
+      "ko": ""
+    },
+    "virus": {
+      "idle": "",
+      "ko": ""
+    },
+    "potion": {
+      "idle": "",
+      "ko": ""
+    },
+    "candy": {
+      "idle": "",
+      "ko": ""
+    },
+    "bomb": {
+      "idle": ""
+    }
   },
   "audio": {
     "bgmHome": "",

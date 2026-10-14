@@ -6,3 +6,7 @@ data/
 *.log
 .DS_Store
 .claude/
+
+# file gốc của designer (đã có bản dùng trong public/assets/img)
+*.clip
+/BG PC.jpg
