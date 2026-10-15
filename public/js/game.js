@@ -699,6 +699,7 @@
     G.pausedAt = null;
     G.state = 'playing';
     app.classList.add('is-playing');
+    showHammerReady();
     clearInterval(G.syncTimer);
     G.syncTimer = setInterval(function () { sync(false); }, 3000);
     sync(false);
@@ -805,7 +806,13 @@
     hammer.classList.add('mouse');
     placeHammer(e.clientX, e.clientY);
   });
-  board.addEventListener('pointerleave', function (e) { if (e.pointerType === 'mouse') hammer.classList.remove('mouse'); });
+  // búa luôn hiện trong lúc chơi (kể cả khi chơi bằng bàn phím); chuột rời bàn chơi thì búa đứng yên tại chỗ
+  function showHammerReady() {
+    if (hammer.classList.contains('mouse')) return;
+    var r = G.holes[4].el.getBoundingClientRect();
+    placeHammer(r.left + r.width * 0.62, r.top + r.height * 0.45);
+    hammer.classList.add('mouse');
+  }
 
   function swingHammer(x, y, type) {
     if (type === 'mouse') {
@@ -832,7 +839,7 @@
         tapHole(KEYMAP[e.code], e.timeStamp);
         var H = G.holes[KEYMAP[e.code]];
         var r = H.el.getBoundingClientRect();
-        if (window.matchMedia && matchMedia('(pointer: fine)').matches) swingHammer(r.left + r.width / 2, r.top + r.height * 0.5, 'mouse');
+        swingHammer(r.left + r.width / 2, r.top + r.height * 0.5, 'mouse');
       } else if (e.code === 'Escape' || e.code === 'Space' || e.code === 'KeyP') {
         e.preventDefault();
         pauseGame(false);
@@ -1446,7 +1453,7 @@
         '<span class="kb-pad" aria-hidden="true">' + [7, 8, 9, 4, 5, 6, 1, 2, 3].map(function (n) { return '<i>' + n + '</i>'; }).join('') + '</span></span></li></ul></section>' +
       '<section><h3>2. Vật phẩm &amp; điểm</h3><div class="items-grid">' + items + '</div>' +
       '<p class="guide-warn">⚠️ Bom có thể hóa trang trà trộn vào vật phẩm, hãy tinh mắt chú ý</p>' +
-      '<p class="guide-sub">🔥 Giữ combo để nâng cấp búa — búa càng xịn, điểm càng <b>nhân lên</b>! Với <b>Búa Kim Cang</b>, mỗi vật phẩm hạ gục được cộng thêm <b>+' + hbn[2] + '% điểm</b> — hạ 1 con Bí Thiết Giáp nhận tới <b>' + (g.items.bossArmor ? g.items.bossArmor.points + Math.floor(g.items.bossArmor.points * hbn[2] / 100) : 250) + ' điểm</b>!</p><div class="items-grid hammers-grid">' + hammers + '</div></section>' +
+      '<p class="guide-sub">🔥 Giữ combo để nâng cấp búa — búa càng xịn, điểm càng <b>nhân lên</b>!</p><div class="items-grid hammers-grid">' + hammers + '</div></section>' +
       '<section><h3>3. Thể lệ nhận voucher</h3><table class="tier-table"><tbody>' + tierRows + '</tbody></table></section>' +
       '<section><h3>4. Lưu ý</h3><ul>' +
       '<li>Chương trình diễn ra từ ' + esc(c.periodText || (fmtDate(c.start) + ' – ' + fmtDate(c.end))) + '.</li>' +
