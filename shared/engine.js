@@ -277,7 +277,7 @@
   }
   // % điểm cộng thêm của từng cấp búa (số nguyên, làm tròn xuống -> tất định)
   function hammerBonus(cfg, level, base) {
-    var b = cfg.combo.hammerBonus && cfg.combo.hammerBonus.length === 3 ? cfg.combo.hammerBonus : [20, 50, 100];
+    var b = cfg.combo.hammerBonus && cfg.combo.hammerBonus.length === 3 ? cfg.combo.hammerBonus : [50, 100, 150];
     return level > 0 ? Math.floor(base * (b[level - 1] | 0) / 100) : 0;
   }
 

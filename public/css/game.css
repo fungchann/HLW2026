@@ -487,7 +487,7 @@ button, input { font: inherit; }
 .item-card.danger .ic-info { color: #ffe1e4; }
 .item-card .ic-info span { white-space: nowrap; }
 .hammers-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 520px) { .hammers-grid .ic-body { flex-direction: column; gap: 4px; } .hammers-grid .ic-info { text-align: center; } }
+@media (max-width: 520px) { .hammers-grid { gap: 6px; } .hammers-grid .item-card { padding-inline: 4px; } .hammers-grid .ic-body { flex-direction: column; gap: 4px; } .hammers-grid .ic-info { text-align: center; } .hammers-grid .ic-info span { white-space: normal; font-size: .82rem; } }
 .item-card .hammer-ico { width: 54px; height: 54px; flex: none; }
 .tier-table { width: 100%; border-collapse: collapse; font-weight: 600; }
 .tier-table th, .tier-table td { padding: 8px 6px; border-bottom: 1px solid var(--line); text-align: left; font-size: .95rem; }

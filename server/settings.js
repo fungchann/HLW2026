@@ -58,7 +58,7 @@ function defaults() {
       periodText: '26/10 – 31/10/2026'
     },
     turns: { max: 3, regenMinutes: 10 },
-    combo: { windowMs: 1500, bonus: [0, 0, 2, 3, 4, 5], hammer: [3, 5, 8], hammerBonus: [20, 50, 100] },
+    combo: { windowMs: 1500, bonus: [0, 0, 2, 3, 4, 5], hammer: [3, 5, 8], hammerBonus: [50, 100, 150] },
     bombs: { strikes: 2, disguiseLevel: 3, disguiseLevel2: 5, disguisePct: 40 },
     boss: { enabled: true, firstLevel: 4, everyLevels: 3 },
     items: {
@@ -367,6 +367,19 @@ function migrate() {
   migrateV2();
   migrateV3();
   migrateTapRate();
+  migrateHammerBonus();
+}
+// Búa xịn cộng điểm nhiều hơn: +50% / +100% / +150% (thay mức cũ 20/50/100 hoặc khi chưa có)
+function migrateHammerBonus() {
+  if (db.metaGet('mig_hammer_bonus_v2')) return;
+  const next = JSON.parse(JSON.stringify(load().settings));
+  const cur = next.combo.hammerBonus;
+  if (!cur || String(cur) === '20,50,100') {
+    next.combo.hammerBonus = [50, 100, 150];
+    const r = save(next, 'system', 'Búa xịn cộng điểm: Băng Long +50%, Hỏa Long +100%, Kim Cang +150%');
+    if (!r.ok) console.error('[settings] migrate hammer bonus failed', r.errors);
+  }
+  db.metaSet('mig_hammer_bonus_v2', String(Date.now()));
 }
 // Ngưỡng tốc độ đập cũ (15 lần/giây) bắt nhầm người chơi bằng bàn phím -> nâng lên 22
 function migrateTapRate() {
