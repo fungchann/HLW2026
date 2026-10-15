@@ -191,6 +191,9 @@ function open(file) {
   conn = new DatabaseSync(file);
   conn.exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = NORMAL; PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
   conn.exec(SCHEMA);
+  // nâng cấp: cột tạm khoá chơi (gian lận liên tiếp)
+  const cols = conn.prepare('PRAGMA table_info(players)').all().map((c) => c.name);
+  if (!cols.includes('locked_until')) conn.exec('ALTER TABLE players ADD COLUMN locked_until INTEGER NOT NULL DEFAULT 0');
   return conn;
 }
 

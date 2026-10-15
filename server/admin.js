@@ -22,7 +22,9 @@ const util = require('./util');
 const Engine = require('../shared/engine');
 const { HttpError, readJson, json, send, parseCookies, setCookie, clientIp, isHttps } = require('./http');
 
-const COOKIE = 'hlw_admin';
+const COOKIE = 'sid';
+// cookie đăng nhập chỉ được gửi kèm khi ở trong đường dẫn quản trị bí mật
+const COOKIE_PATH = '/' + env.ADMIN_PATH + '/';
 const ROLES = { viewer: 1, manager: 2, superadmin: 3 };
 const ROLE_LABEL = { viewer: 'Chỉ xem', manager: 'Quản lý', superadmin: 'Quản trị cao nhất' };
 
@@ -130,7 +132,7 @@ async function login(req, res) {
   const exp = now + env.ADMIN_SESSION_TTL_H * 3600 * 1000;
   db.run('INSERT INTO admin_sessions (token_hash, admin_id, csrf, created_at, expires_at, last_seen_at, ip, ua) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
     sec.sha256(token), a.id, csrf, now, exp, now, ip, String(req.headers['user-agent'] || '').slice(0, 200));
-  setCookie(res, COOKIE, token, { maxAge: env.ADMIN_SESSION_TTL_H * 3600, secure: env.COOKIE_SECURE || isHttps(req), sameSite: 'Strict', path: '/' });
+  setCookie(res, COOKIE, token, { maxAge: env.ADMIN_SESSION_TTL_H * 3600, secure: env.COOKIE_SECURE || isHttps(req), sameSite: 'Strict', path: COOKIE_PATH });
   req.admin = a;
   audit(req, 'login');
   json(res, 200, { admin: publicAdmin(a, { csrf }) });
@@ -139,7 +141,7 @@ async function login(req, res) {
 function logout(req, res) {
   const tok = parseCookies(req)[COOKIE];
   if (tok) db.run('DELETE FROM admin_sessions WHERE token_hash = ?', sec.sha256(tok));
-  setCookie(res, COOKIE, '', { maxAge: 0, secure: env.COOKIE_SECURE || isHttps(req) });
+  setCookie(res, COOKIE, '', { maxAge: 0, secure: env.COOKIE_SECURE || isHttps(req), sameSite: 'Strict', path: COOKIE_PATH });
   json(res, 200, { ok: true });
 }
 
@@ -237,7 +239,7 @@ function playerDetail(id, admin) {
       id: p.id, extId: p.ext_id, test: !!p.is_test, createdAt: p.created_at, firstPlayAt: p.first_play_at, lastPlayAt: p.last_play_at,
       sessions: p.total_sessions, done: p.done_sessions, bestScore: p.best_score, bestCombo: p.best_combo,
       avgScore: p.done_sessions ? Math.round(p.sum_score / p.done_sessions) : 0, bombDeaths: p.bomb_deaths,
-      flagged: p.flagged_sessions, banned: !!p.banned, banReason: p.ban_reason, device: p.device_last, activeDays: days,
+      flagged: p.flagged_sessions, banned: !!p.banned, banReason: p.ban_reason, lockedUntil: p.locked_until > Date.now() ? p.locked_until : 0, device: p.device_last, activeDays: days,
       turns: players.publicTurns(st)
     },
     sessions: sessions.map((x) => Object.assign(x, { flags: x.flags_json ? JSON.parse(x.flags_json).flags : [], flags_json: undefined })),
@@ -421,7 +423,7 @@ function routes(router) {
     const b = await readJson(req);
     const id = util.toInt(p.id, 0);
     const reason = String(b.reason || '').slice(0, 200);
-    db.run('UPDATE players SET banned = ?, ban_reason = ? WHERE id = ?', b.banned ? 1 : 0, b.banned ? reason : null, id);
+    db.run('UPDATE players SET banned = ?, ban_reason = ?, locked_until = 0 WHERE id = ?', b.banned ? 1 : 0, b.banned ? reason : null, id);
     if (b.banned) db.run('DELETE FROM auth_tokens WHERE player_id = ?', id);
     audit(req, b.banned ? 'player_ban' : 'player_unban', id, { reason });
     return { ok: true };

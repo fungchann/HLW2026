@@ -78,6 +78,10 @@ function start(req, p, body) {
   }
   const rl = sec.rateLimit('start:' + p.id, 12, 60000);
   if (!rl.ok) throw new HttpError(429, 'rate_limited', 'Thao tác quá nhanh');
+  if (p.locked_until > Date.now() && !p.is_test) {
+    throw new HttpError(403, 'locked', 'Hệ thống phát hiện gian lận nhiều lượt liên tiếp nên bạn tạm thời chưa thể chơi. Bạn có thể chơi lại sau ' +
+      new Date(p.locked_until).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) + '.');
+  }
   if (botSignal(body)) throw new HttpError(403, 'automation', 'Hệ thống phát hiện trình duyệt đang bị điều khiển bởi công cụ tự động hoặc trợ lý AI. Vui lòng tắt chúng để chơi.');
 
   // Mỗi người chỉ có 1 lượt đang chạy: lượt cũ (nếu có) được kết thúc trước.
@@ -334,20 +338,22 @@ function finalize(sid, reason) {
   });
   active.delete(sid);
 
-  // Tự khoá tài khoản khi bị phát hiện gian lận nhiều lần
+  // Gian lận N lượt LIÊN TIẾP (mặc định 3) -> tạm khoá chơi lockHours giờ (mặc định 24). Không khoá vĩnh viễn.
+  // Chỉ tính các lượt kết thúc SAU lần tạm khoá trước, để hết khoá là bắt đầu đếm lại từ đầu.
   let banned = false;
-  if (invalid && s.antiCheat.autoBanAfter > 0 && !p.is_test) {
-    const n = db.get("SELECT COUNT(*) n FROM sessions WHERE player_id = ? AND status = 'invalid'", p.id).n;
-    if (n >= s.antiCheat.autoBanAfter) {
-      db.run('UPDATE players SET banned = 1, ban_reason = ? WHERE id = ?', 'Hệ thống phát hiện gian lận nhiều lần', p.id);
-      db.run('DELETE FROM auth_tokens WHERE player_id = ?', p.id);
+  const N = s.antiCheat.autoBanAfter;
+  if (invalid && N > 0 && !p.is_test) {
+    const last = db.all("SELECT status FROM sessions WHERE player_id = ? AND status IN ('finished', 'invalid') AND ended_at > ? ORDER BY ended_at DESC LIMIT ?",
+      p.id, p.locked_until || 0, N);
+    if (last.length >= N && last.every((r) => r.status === 'invalid')) {
+      db.run('UPDATE players SET locked_until = ? WHERE id = ?', now + s.antiCheat.lockHours * 3600e3, p.id);
       banned = true;
     }
   }
 
   const row = db.get('SELECT * FROM sessions WHERE id = ?', sid);
   const who = p.ext_id;
-  if (banned) realtime.activity({ type: 'warning', test: !!row.is_test, text: 'Đã TỰ KHOÁ tài khoản ' + who + ' do gian lận nhiều lần' });
+  if (banned) realtime.activity({ type: 'warning', test: !!row.is_test, text: 'Tạm khoá ' + who + ' ' + s.antiCheat.lockHours + ' giờ do gian lận ' + N + ' lượt liên tiếp' });
   if (aw.status === 'issued' || aw.status === 'pending' || aw.status === 'held') {
     realtime.activity({ type: 'coupon', test: !!row.is_test, text: who + ' đạt ' + score + ' điểm — nhận ' + aw.tier.label + (aw.status === 'held' ? ' (chờ duyệt)' : '') });
   } else if (invalid || analysis.suspicious) {
@@ -395,7 +401,8 @@ function resultFor(row, p) {
     gameOverTitle: util.pickRandom(s.messages.gameOver),
     owned: players.ownedTiers(p.id),
     turns: players.publicTurns(players.turnState(p, s)),
-    banned: !!p.banned
+    banned: !!p.banned,
+    lockedUntil: p.locked_until > Date.now() ? p.locked_until : 0
   };
 }
 

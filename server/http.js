@@ -39,18 +39,28 @@ class Router {
   }
 }
 
+// Có tin tiêu đề do reverse proxy (nginx) gắn vào không: bật TRUST_PROXY, HOẶC kết nối đến từ chính máy chủ
+// (nginx chạy cùng máy). Người ngoài kết nối thẳng vào cổng Node thì KHÔNG được tin -> không giả IP / HTTPS được.
+function fromProxy(req) {
+  if (env.TRUST_PROXY) return true;
+  const ra = (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+  return ra === '127.0.0.1' || ra === '::1';
+}
+
 function clientIp(req) {
-  if (env.TRUST_PROXY) {
-    const xf = req.headers['x-forwarded-for'];
-    if (xf) return String(xf).split(',')[0].trim();
+  if (fromProxy(req)) {
+    // X-Real-IP do nginx tự đặt = địa chỉ thật. Với X-Forwarded-For lấy phần tử CUỐI (do nginx thêm vào);
+    // phần tử đầu là do trình duyệt gửi lên, giả mạo được.
     if (req.headers['x-real-ip']) return String(req.headers['x-real-ip']).trim();
+    const xf = req.headers['x-forwarded-for'];
+    if (xf) { const parts = String(xf).split(',').map((x) => x.trim()).filter(Boolean); if (parts.length) return parts[parts.length - 1]; }
   }
   return (req.socket.remoteAddress || '').replace(/^::ffff:/, '');
 }
 
 function isHttps(req) {
   if (req.socket.encrypted) return true;
-  return env.TRUST_PROXY && String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
+  return fromProxy(req) && String(req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https';
 }
 
 function readBody(req, limit) {

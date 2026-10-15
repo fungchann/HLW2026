@@ -400,7 +400,7 @@
     return h && h.length === 3 ? h : [3, 5, 8];
   }
   function hammerSizes() {
-    return window.matchMedia && matchMedia('(max-width: 600px)').matches ? [80, 94, 108, 122] : [92, 108, 124, 140];
+    return window.matchMedia && matchMedia('(max-width: 600px)').matches ? [104, 122, 140, 160] : [128, 152, 176, 204];
   }
   function setHammerSkin(level) {
     if ((G.hammerSkin || 0) === level) return;
@@ -408,7 +408,7 @@
     G.hammerSkin = level;
     var hm = $('hammer');
     hm.setAttribute('data-skin', level ? HAMMER_SKINS[level].key : '');
-    G.hammerW = hammerSizes()[level] || 92;
+    G.hammerW = hammerSizes()[level] || hammerSizes()[0];
     if (up && level) restartClass(hm, 'hm-up');
   }
   $('btn-pause').innerHTML = Art.ui('pause');
@@ -719,7 +719,7 @@
   // ---------------------------------------------------------------- đập
   var KEYMAP = {
     Numpad7: 0, Numpad8: 1, Numpad9: 2, Numpad4: 3, Numpad5: 4, Numpad6: 5, Numpad1: 6, Numpad2: 7, Numpad3: 8,
-    Digit1: 0, Digit2: 1, Digit3: 2, Digit4: 3, Digit5: 4, Digit6: 5, Digit7: 6, Digit8: 7, Digit9: 8,
+    Digit7: 0, Digit8: 1, Digit9: 2, Digit4: 3, Digit5: 4, Digit6: 5, Digit1: 6, Digit2: 7, Digit3: 8,
     KeyQ: 0, KeyW: 1, KeyE: 2, KeyA: 3, KeyS: 4, KeyD: 5, KeyZ: 6, KeyX: 7, KeyC: 8
   };
 
@@ -1351,7 +1351,7 @@
     if (res.endReason === 'idle') h += '<p class="res-note">Lượt chơi tự kết thúc vì bạn không thao tác trong ' + Math.round(((G.cfg && G.cfg.rules && G.cfg.rules.idleMs) || 10000) / 1000) + ' giây.</p>';
     if (aw.status === 'invalid') {
       h += '<div class="res-block"><b>Lượt chơi đã bị huỷ</b>Hệ thống phát hiện thao tác bất thường (công cụ tự động, trợ lý AI chơi hộ, tiện ích điều khiển trình duyệt, can thiệp dữ liệu hoặc tốc độ không phải của người chơi). Kết quả không được ghi nhận và không được nhận voucher.' +
-        (res.banned ? '<br><b>Tài khoản của bạn đã bị tạm khoá do vi phạm nhiều lần.</b>' : ' Tiếp tục vi phạm, tài khoản sẽ bị khoá.') + '</div>';
+        (res.lockedUntil ? '<br><b>Bạn đã gian lận nhiều lượt liên tiếp nên tạm thời chưa thể chơi đến ' + fmtTime(res.lockedUntil) + ' ' + fmtDate(res.lockedUntil) + '.</b>' : (res.banned ? '<br><b>Tài khoản của bạn đã bị khoá khỏi chương trình.</b>' : ' Gian lận nhiều lượt liên tiếp, bạn sẽ bị tạm khoá chơi 1 ngày.')) + '</div>';
     } else if (won && tier) {
       h += voucherHtml(tier, '', aw.status === 'held' ? 'Đang xác minh' : '', aw.status === 'held' ? 's-held' : '', expires);
       if (aw.status === 'held') {
@@ -1376,7 +1376,7 @@
     h += '<div class="res-icons"><button class="round-btn primary" id="res-replay" type="button" title="' + esc(turnsText) + '" aria-label="' + esc(turnsText) + '"' + (total > 0 ? '' : ' disabled') + '><span class="disc">' + Art.ui('replay') + '</span>' +
       (total > 0 ? '<i class="turn-badge">' + total + '</i>' : '') + '</button>' +
       '<button class="round-btn" id="res-home" type="button" title="Về trang chủ" aria-label="Về trang chủ"><span class="disc">' + Art.ui('home') + '</span></button></div>';
-    if (res.banned) h = h.replace('id="res-replay" type="button"', 'id="res-replay" type="button" disabled');
+    if (res.banned || res.lockedUntil) h = h.replace('id="res-replay" type="button"', 'id="res-replay" type="button" disabled');
     var body = $('res-body');
     body.innerHTML = h;
     setScreen('home');
@@ -1439,7 +1439,9 @@
       '<section><h3>1. Cách chơi</h3><ul>' +
       '<li>Bạn hãy dùng chiếc búa sấm sét của Thor để đập hội bí ngô và đám quái Halloween đang quậy phá.</li>' +
       '<li>Đập trúng liên tiếp để giữ combo và nhận thêm điểm; chậm tay hoặc trúng bom sẽ mất chuỗi.</li>' +
-      '<li>Mỗi tài khoản có tối đa ' + g.turns.max + ' lượt, mỗi ' + g.turns.regenMinutes + ' phút hồi sinh 1 lượt chơi.</li></ul></section>' +
+      '<li>Mỗi tài khoản có tối đa ' + g.turns.max + ' lượt, mỗi ' + g.turns.regenMinutes + ' phút hồi sinh 1 lượt chơi.</li>' +
+      '<li><span class="kb-row"><span>Trên máy tính có thể chơi bằng <b>bàn phím số 1–9</b> (numpad): mỗi phím ứng với 1 ô đúng vị trí như hình.</span>' +
+        '<span class="kb-pad" aria-hidden="true">' + [7, 8, 9, 4, 5, 6, 1, 2, 3].map(function (n) { return '<i>' + n + '</i>'; }).join('') + '</span></span></li></ul></section>' +
       '<section><h3>2. Vật phẩm &amp; điểm</h3><div class="items-grid">' + items + '</div>' +
       '<p class="guide-warn">⚠️ Bom có thể hóa trang trà trộn vào vật phẩm, hãy tinh mắt chú ý</p>' +
       '<p class="guide-sub">Đập càng nhiều combo, càng có cơ hội nhận búa xịn</p><div class="items-grid hammers-grid">' + hammers + '</div></section>' +

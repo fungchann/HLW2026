@@ -219,8 +219,12 @@ const server = http.createServer(async (req, res) => {
   baseHeaders(req, res);
   let url;
   try { url = new URL(req.url, 'http://localhost'); } catch (e) { return json(res, 400, { error: 'bad_url' }); }
-  const pathname = url.pathname;
+  let pathname = url.pathname;
   try {
+    // API quản trị CHỈ trả lời khi gọi qua đường dẫn bí mật (/<ADMIN_PATH>/api/admin/...).
+    // Gọi thẳng /api/admin/... -> 404 giống hệt đường dẫn không tồn tại, không lộ là có trang quản trị.
+    if (pathname.startsWith('/api/admin')) throw new HttpError(404, 'not_found', 'Không tìm thấy');
+    if (pathname.startsWith(ADMIN_PREFIX + 'api/admin/')) pathname = pathname.slice(ADMIN_PREFIX.length - 1);
     if (pathname.startsWith('/api/') || pathname === '/healthz') {
       const m = router.match(req.method, pathname);
       if (!m) throw new HttpError(404, 'not_found', 'Không tìm thấy');

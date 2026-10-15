@@ -43,6 +43,7 @@ async function api(method, p, body, opts) {
   if (opts.token) headers.Authorization = 'Bearer ' + opts.token;
   if (opts.cookie) headers.Cookie = opts.cookie;
   if (opts.csrf) headers['X-CSRF-Token'] = opts.csrf;
+  if (p.startsWith('/api/admin') && !opts.raw) p = '/hlw-admin-quantri128' + p;
   const res = await fetch(BASE + p, { method, headers, body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)) });
   const text = await res.text();
   let data = null;
@@ -349,7 +350,7 @@ async function playSession(token, targetScore, opts) {
     assert.strictEqual(s2.status, 404);
   });
 
-  await step('Gian lận: auto click dồn dập -> chặn ngay khi đang chơi, lượt bị huỷ; lần thứ 3 tự khoá tài khoản', async () => {
+  await step('Gian lận: auto click dồn dập -> chặn ngay, lượt bị huỷ; 3 lượt gian lận liên tiếp -> tạm khoá chơi 24 giờ (không khoá vĩnh viễn)', async () => {
     const key = sec.randomToken(24);
     const gt = (await api('POST', '/api/auth/guest', { key })).data.accessToken;
     let r;
@@ -365,13 +366,22 @@ async function playSession(token, targetScore, opts) {
       assert.strictEqual(r.data.ended, true, 'máy chủ dừng lượt ngay');
       assert.strictEqual(r.data.result.award.status, 'invalid');
       assert.strictEqual(r.data.result.score, 0);
-      assert.strictEqual(r.data.result.banned, k === 2, 'lần ' + (k + 1));
+      assert.strictEqual(!!r.data.result.lockedUntil, k === 2, 'lần ' + (k + 1));
+      assert.strictEqual(r.data.result.banned, false, 'không khoá vĩnh viễn');
     }
     const again = await api('POST', '/api/game/start', { engine: Engine.VERSION }, { token: gt });
-    assert.ok(again.status === 401 || again.status === 403, 'tài khoản bị khoá không chơi tiếp được: ' + again.status);
+    assert.strictEqual(again.status, 403);
+    assert.strictEqual(again.data.error, 'locked', 'tạm khoá chơi');
+    // vẫn vào được trang chủ, chỉ không bắt đầu lượt được; hết hạn khoá là chơi lại được
     const relog = await api('POST', '/api/auth/guest', { key });
-    assert.strictEqual(relog.status, 403);
-    assert.strictEqual(relog.data.error, 'banned');
+    assert.strictEqual(relog.status, 200);
+    const pid = db.get('SELECT player_id FROM auth_tokens ORDER BY created_at DESC LIMIT 1').player_id;
+    const lk = db.get('SELECT locked_until FROM players WHERE id = ?', pid).locked_until;
+    assert.ok(lk > Date.now() + 23 * 3600e3 && lk < Date.now() + 25 * 3600e3, 'khoá khoảng 24 giờ');
+    db.run('UPDATE players SET locked_until = ? WHERE id = ?', Date.now() - 1000, pid);
+    db.run('UPDATE players SET turns_at = turns_at - 3600000 WHERE id = ?', pid);
+    const back = await api('POST', '/api/game/start', { engine: Engine.VERSION }, { token: relog.data.accessToken });
+    assert.strictEqual(back.status, 200, 'hết hạn khoá chơi lại được: ' + JSON.stringify(back.data));
   });
 
   await step('Gian lận: trình duyệt báo có AI/công cụ chơi hộ -> từ chối bắt đầu; đang chơi thì huỷ lượt ngay', async () => {
@@ -437,6 +447,37 @@ async function playSession(token, targetScore, opts) {
       const r = await api('GET', p);
       assert.ok(!String(typeof r.data === 'string' ? r.data : JSON.stringify(r.data)).includes(code), 'không lộ mã ở ' + p);
     }
+  });
+
+  await step('Bảo mật: API quản trị bị giấu (404 như trang không tồn tại); không tải được mã nguồn / dữ liệu / cấu hình máy chủ', async () => {
+    const a = await api('GET', '/api/admin/me', undefined, { raw: true });
+    const b = await api('GET', '/api/khong-ton-tai', undefined, { raw: true });
+    assert.strictEqual(a.status, 404); assert.deepStrictEqual(a.data, b.data);
+    assert.strictEqual((await api('POST', '/api/admin/login', { username: 'boss', password: 'x' }, { raw: true })).status, 404);
+    for (const p of ['/server/env.js', '/server/coupons.js', '/data/hlw2026.db', '/data/secrets.json', '/.env', '/.git/config', '/package.json', '/scripts/selftest.js',
+      '/js/../../server/env.js', '/assets/..%2f..%2fserver%2fenv.js', '/hlw-admin-quantri128/../../data/secrets.json', '/hlw-admin-quantri128/..%2f..%2fdata%2fsecrets.json']) {
+      const r = await api('GET', p, undefined, { raw: true });
+      assert.strictEqual(r.status, 404, p + ' -> ' + r.status);
+    }
+    const home = await api('GET', '/');
+    for (const p of ['/', '/js/game.js', '/js/api.js', '/js/art.js', '/shared/engine.js']) {
+      const r = await api('GET', p);
+      assert.ok(!/hlw-admin|api\/admin|INTEGRATION_SECRET|APP_SECRET|COUPON_API_KEY/.test(String(r.data)), 'lộ thông tin quản trị ở ' + p);
+    }
+    assert.ok(home.headers.get('content-security-policy'));
+  });
+
+  await step('Bảo mật: người chơi KHÔNG tự chọn được mốc / mức giảm giá (gửi kèm tier, discount, score đều bị bỏ qua)', async () => {
+    const tk = (await api('POST', '/api/auth/guest', { key: sec.randomToken(24) })).data.accessToken;
+    const st = await api('POST', '/api/game/start', { engine: Engine.VERSION, tier: 'hosting', discount: 99 }, { token: tk });
+    backdate(st.data.sessionId, 9000);
+    const r = await api('POST', '/api/game/finish', { sid: st.data.sessionId, base: 0, ev: [], gt: 3000, reason: 'quit', score: 9999, tierId: 'hosting', discount: 99, coupon: { discount: 99 } }, { token: tk });
+    assert.strictEqual(r.data.result.score, 0);
+    assert.strictEqual(r.data.result.award.status, 'none');
+    assert.strictEqual(db.get('SELECT COUNT(*) n FROM coupons WHERE session_id = ?', st.data.sessionId).n, 0);
+    // mức giảm của mọi voucher đã cấp đều đúng cấu hình máy chủ
+    const cfgTiers = settings.current().tiers;
+    for (const c of db.all('SELECT tier_id, discount FROM coupons')) assert.strictEqual(c.discount, cfgTiers.find((t) => t.id === c.tier_id).discount);
   });
 
   let cookie, csrf;

@@ -133,7 +133,7 @@ function defaults() {
       ]
     },
     features: { leaderboard: false, resumeSession: true },
-    antiCheat: { minMedianReactionMs: 170, maxTapRate: 22, slowClockRatio: 0.85, abandonMinutes: 10, idleSeconds: 10, blockSuspicious: true, autoBanAfter: 3 }
+    antiCheat: { minMedianReactionMs: 170, maxTapRate: 22, slowClockRatio: 0.85, abandonMinutes: 10, idleSeconds: 10, blockSuspicious: true, autoBanAfter: 3, lockHours: 24 }
   };
 }
 
@@ -336,7 +336,8 @@ function sanitize(input) {
     abandonMinutes: int(ac.abandonMinutes, 2, 120, D.antiCheat.abandonMinutes),
     idleSeconds: int(ac.idleSeconds, 0, 600, D.antiCheat.idleSeconds),
     blockSuspicious: bool(ac.blockSuspicious, D.antiCheat.blockSuspicious),
-    autoBanAfter: int(ac.autoBanAfter, 0, 100, D.antiCheat.autoBanAfter)
+    autoBanAfter: int(ac.autoBanAfter, 0, 100, D.antiCheat.autoBanAfter),
+    lockHours: int(ac.lockHours, 1, 720, D.antiCheat.lockHours)
   };
   return { settings: out, errors };
 }

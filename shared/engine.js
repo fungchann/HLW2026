@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 3;
+  var VERSION = 4;
   var HOLES = 9;
 
   // Mốc thời gian hiển thị (ms). rise/sink chỉ là hiệu ứng; ko = thời gian vật phẩm
@@ -31,6 +31,7 @@
   // thêm hitHoldMs sau mỗi cú đập trúng (tính từ cú đập đầu tiên) để kịp đập tiếp.
   // Boss xuất hiện lâu hơn một chút để người chơi kịp nhận ra.
   var BOSS_DUR_FACTOR = 160;
+  var BOSS_HOLD_FACTOR = 250; // mỗi cú đập trúng boss giữ boss lại lâu gấp 2,5 lần vật phẩm thường
   var BOMB_SKINS_L1 = ['cloth', 'iron'];
   var BOMB_SKINS_L2 = ['cloth', 'iron', 'potion'];
 
@@ -256,7 +257,8 @@
       this.spawns.push(s);
       this.byHole[hole].push(s);
       // giữ ô trống đủ lâu cho phần "giữ lại" khi đập nhiều lần + hiệu ứng hạ gục
-      this.holeFreeAt[hole] = t + dur + (hp - 1) * R.hold + TIMING.ko + TIMING.holeRest;
+      var hold = isBoss ? Math.round(R.hold * BOSS_HOLD_FACTOR / 100) : R.hold;
+      this.holeFreeAt[hole] = t + dur + (hp - 1) * hold + TIMING.ko + TIMING.holeRest;
       live.push(t + dur);
       n++;
       this.lastHole = hole;
@@ -387,7 +389,8 @@
       this.killsByType[s.type] = (this.killsByType[s.type] || 0) + 1;
       return { kind: 'kill', t: t, hole: hole, spawn: s, base: base, bonus: bonus, points: base + bonus, combo: this.combo, hitNo: c };
     }
-    if (t + this.hold > this.endOf(s)) this.until[s.id] = t + this.hold;
+    var hold = s.type.indexOf('boss') === 0 ? Math.round(this.hold * BOSS_HOLD_FACTOR / 100) : this.hold;
+    if (t + hold > this.endOf(s)) this.until[s.id] = t + hold;
     return { kind: 'hit', t: t, hole: hole, spawn: s, hitNo: c, left: s.hp - c, combo: this.combo };
   };
 

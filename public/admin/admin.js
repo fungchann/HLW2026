@@ -72,7 +72,7 @@
           if (!res.ok) {
             var err = new Error((data && data.message) || ('Lỗi ' + res.status));
             err.status = res.status; err.code = data && data.error; err.data = data;
-            if (res.status === 401 && path !== '/api/admin/login') showLogin();
+            if (res.status === 401 && path !== 'api/admin/login') showLogin();
             if (err.code === 'must_change_password') showPwChange();
             throw err;
           }
@@ -189,7 +189,7 @@
     var btn = $('lg-submit');
     $('lg-error').textContent = '';
     btn.classList.add('is-loading');
-    api('POST', '/api/admin/login', { username: $('lg-user').value, password: $('lg-pass').value }).then(function (d) {
+    api('POST', 'api/admin/login', { username: $('lg-user').value, password: $('lg-pass').value }).then(function (d) {
       btn.classList.remove('is-loading');
       $('lg-pass').value = '';
       S.csrf = d.admin.csrf;
@@ -201,14 +201,14 @@
     e.preventDefault();
     $('pw-error').textContent = '';
     if ($('pw-new').value !== $('pw-new2').value) { $('pw-error').textContent = 'Hai mật khẩu mới không khớp.'; return; }
-    api('POST', '/api/admin/password', { current: $('pw-cur').value, next: $('pw-new').value }).then(function () {
+    api('POST', 'api/admin/password', { current: $('pw-cur').value, next: $('pw-new').value }).then(function () {
       ['pw-cur', 'pw-new', 'pw-new2'].forEach(function (id) { $(id).value = ''; });
       toast('Đã đổi mật khẩu', 'good');
       return start();
     }).catch(function (err) { $('pw-error').textContent = err.message; });
   });
   $('btn-logout').addEventListener('click', function () {
-    api('POST', '/api/admin/logout', {}).catch(function () {}).then(function () { S.me = null; S.csrf = null; showLogin(); });
+    api('POST', 'api/admin/logout', {}).catch(function () {}).then(function () { S.me = null; S.csrf = null; showLogin(); });
   });
   $('btn-menu').addEventListener('click', function () {
     var open = $('side').classList.toggle('open');
@@ -216,10 +216,10 @@
   });
 
   function start() {
-    return api('GET', '/api/admin/me').then(function (d) {
+    return api('GET', 'api/admin/me').then(function (d) {
       S.me = d.admin; S.csrf = d.admin.csrf; S.env = d.env || {};
       if (S.me.mustChange) { showPwChange(); return; }
-      return api('GET', '/api/admin/overview-meta').then(function (meta) {
+      return api('GET', 'api/admin/overview-meta').then(function (meta) {
         S.meta = meta;
         if (!S.range) {
           S.range = meta.status.status === 'upcoming' ? { preset: 'all' } : { preset: 'campaign' };
@@ -258,7 +258,7 @@
   function startStream() {
     stopStream();
     if (!window.EventSource) return;
-    var es = new EventSource('/api/admin/stream');
+    var es = new EventSource('api/admin/stream');
     S.es = es;
     es.addEventListener('open', function () { $('live-pill').classList.add('on'); });
     es.addEventListener('error', function () { $('live-pill').classList.remove('on'); });
@@ -427,7 +427,7 @@
     var dash = $('dash');
     if (!dash) return;
     if (!silent) dash.classList.add('loading');
-    return api('GET', '/api/admin/stats?' + rangeQuery()).then(function (d) {
+    return api('GET', 'api/admin/stats?' + rangeQuery()).then(function (d) {
       S.lastStats = d;
       dash.classList.remove('loading');
       renderDashboard(d);
@@ -620,7 +620,7 @@
     bindFilterBar(function () { reload(true); });
     if (o.bindFilters) o.bindFilters(function () { reload(true); });
     var ex = $('btn-export');
-    if (ex) ex.addEventListener('click', function () { window.location.href = '/api/admin/export/' + o.exportKind + '?' + rangeQuery(); });
+    if (ex) ex.addEventListener('click', function () { window.location.href = 'api/admin/export/' + o.exportKind + '?' + rangeQuery(); });
     reload(true);
     return { reload: reload };
   }
@@ -641,7 +641,7 @@
       '<label class="field"><span>Điểm cao nhất</span><select id="f-min"><option value="0">Mọi mức</option>' + S.meta.tiers.filter(function (t) { return t.enabled; }).map(function (t) { return '<option value="' + t.score + '">≥ ' + t.score + '</option>'; }).join('') + '</select></label>' +
       (can('manager') ? '<button class="btn btn-sm" type="button" id="btn-export">Xuất CSV</button>' : '');
     var lp = listPage({
-      id: 'players', endpoint: '/api/admin/players', defaultSort: 'last_play_at', exportKind: 'players', noRange: true,
+      id: 'players', endpoint: 'api/admin/players', defaultSort: 'last_play_at', exportKind: 'players', noRange: true,
       filtersHtml: extra,
       params: function () { return '&q=' + encodeURIComponent($('f-q').value.trim()) + '&filter=' + $('f-filter').value + '&minScore=' + $('f-min').value; },
       bindFilters: function (reload) {
@@ -668,7 +668,7 @@
 
   function openPlayer(id) {
     var body = openDrawer('Người chơi', '<p class="hint">Đang tải...</p>');
-    api('GET', '/api/admin/players/' + id).then(function (d) {
+    api('GET', 'api/admin/players/' + id).then(function (d) {
       var p = d.player;
       $('drawer-title').textContent = 'Người chơi ' + p.extId;
       var html = '<dl class="dl">' +
@@ -677,11 +677,11 @@
         dd('Điểm trung bình', fmtNum(p.avgScore)) + dd('Combo cao nhất', 'x' + p.bestCombo) + dd('Chết vì bom', fmtNum(p.bombDeaths)) +
         dd('Số ngày tham gia', fmtNum(p.activeDays)) + dd('Thiết bị gần nhất', DEVICE[p.device] || '—') +
         dd('Lượt hiện có', p.turns.turns + '/' + p.turns.max + (p.turns.bonus ? ' +' + p.turns.bonus + ' thưởng' : '')) +
-        dd('Trạng thái', p.banned ? '<span class="tag bad">Đang bị khoá</span> ' + esc(p.banReason || '') : '<span class="tag good">Bình thường</span>') +
+        dd('Trạng thái', p.banned ? '<span class="tag bad">Đang bị khoá</span> ' + esc(p.banReason || '') : (p.lockedUntil ? '<span class="tag warn">Tạm khoá đến ' + fmtDT(p.lockedUntil) + '</span> (gian lận liên tiếp)' : '<span class="tag good">Bình thường</span>')) +
         '</dl>';
       if (can('manager')) {
         html += '<div class="actions-row">' +
-          (p.banned ? '<button class="btn btn-sm" type="button" id="pl-unban">Mở khoá</button>' : '<button class="btn btn-sm btn-danger" type="button" id="pl-ban">Khoá khỏi chương trình</button>') +
+          (p.banned || p.lockedUntil ? '<button class="btn btn-sm" type="button" id="pl-unban">Mở khoá</button>' : '<button class="btn btn-sm btn-danger" type="button" id="pl-ban">Khoá khỏi chương trình</button>') +
           '<button class="btn btn-sm" type="button" id="pl-refill">Hồi đầy lượt</button><button class="btn btn-sm" type="button" id="pl-bonus">Tặng thêm lượt</button></div>';
       }
       html += '<h3>Voucher (' + d.coupons.length + ')</h3>' + couponMiniTable(d.coupons);
@@ -694,17 +694,17 @@
       if ($('pl-ban')) $('pl-ban').addEventListener('click', function () {
         dialog({ title: 'Khoá người chơi ' + p.extId, text: 'Người chơi sẽ không thể đăng nhập vào game. Coupon đã cấp vẫn giữ nguyên (thu hồi riêng nếu cần).',
           fields: [{ name: 'reason', label: 'Lý do (hiển thị cho người chơi)', placeholder: 'vd: Sử dụng công cụ gian lận' }], confirm: 'Khoá', danger: true,
-          onSubmit: function (v) { return api('POST', '/api/admin/players/' + id + '/ban', { banned: true, reason: v.reason }).then(function () { toast('Đã khoá người chơi'); reload(); }); } });
+          onSubmit: function (v) { return api('POST', 'api/admin/players/' + id + '/ban', { banned: true, reason: v.reason }).then(function () { toast('Đã khoá người chơi'); reload(); }); } });
       });
       if ($('pl-unban')) $('pl-unban').addEventListener('click', function () {
-        api('POST', '/api/admin/players/' + id + '/ban', { banned: false }).then(function () { toast('Đã mở khoá'); reload(); }).catch(function (e) { toast(e.message, 'bad'); });
+        api('POST', 'api/admin/players/' + id + '/ban', { banned: false }).then(function () { toast('Đã mở khoá'); reload(); }).catch(function (e) { toast(e.message, 'bad'); });
       });
       if ($('pl-refill')) $('pl-refill').addEventListener('click', function () {
-        api('POST', '/api/admin/players/' + id + '/turns', { action: 'refill' }).then(function () { toast('Đã hồi đầy lượt'); reload(); }).catch(function (e) { toast(e.message, 'bad'); });
+        api('POST', 'api/admin/players/' + id + '/turns', { action: 'refill' }).then(function () { toast('Đã hồi đầy lượt'); reload(); }).catch(function (e) { toast(e.message, 'bad'); });
       });
       if ($('pl-bonus')) $('pl-bonus').addEventListener('click', function () {
         dialog({ title: 'Tặng thêm lượt chơi', fields: [{ name: 'amount', label: 'Số lượt (âm để trừ)', type: 'number', value: '1' }], confirm: 'Tặng',
-          onSubmit: function (v) { return api('POST', '/api/admin/players/' + id + '/turns', { action: 'bonus', amount: Number(v.amount) }).then(function () { toast('Đã cập nhật lượt'); reload(); }); } });
+          onSubmit: function (v) { return api('POST', 'api/admin/players/' + id + '/turns', { action: 'bonus', amount: Number(v.amount) }).then(function () { toast('Đã cập nhật lượt'); reload(); }); } });
       });
     }).catch(function (e) { body.innerHTML = '<p class="form-error">' + esc(e.message) + '</p>'; });
   }
@@ -740,7 +740,7 @@
           return;
         }
         btn.disabled = true;
-        api('POST', '/api/admin/coupons/' + id + '/code', {}).then(function (r) {
+        api('POST', 'api/admin/coupons/' + id + '/code', {}).then(function (r) {
           if (el) { el.setAttribute('data-masked', el.textContent); el.textContent = r.code; }
           btn.setAttribute('data-shown', '1'); btn.textContent = 'Ẩn';
           // tự che lại sau 20 giây
@@ -763,7 +763,7 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         var act = btn.getAttribute('data-cact'), id = btn.getAttribute('data-id');
-        var run = function (extra) { return api('POST', '/api/admin/coupons/' + id + '/action', Object.assign({ action: act }, extra || {})).then(function () { toast('Đã cập nhật coupon'); after(); }); };
+        var run = function (extra) { return api('POST', 'api/admin/coupons/' + id + '/action', Object.assign({ action: act }, extra || {})).then(function () { toast('Đã cập nhật coupon'); after(); }); };
         if (act === 'revoke') dialog({ title: 'Thu hồi coupon #' + id, text: 'Người chơi sẽ không còn thấy coupon này. Nếu mã đã được tạo trên hệ thống billing, hãy vô hiệu hoá mã ở đó nữa.', fields: [{ name: 'reason', label: 'Lý do' }], confirm: 'Thu hồi', danger: true, onSubmit: function (v) { return run({ reason: v.reason }); } });
         else if (act === 'redeem') dialog({ title: 'Đánh dấu coupon #' + id + ' đã sử dụng', fields: [{ name: 'ref', label: 'Mã đơn hàng (nếu có)' }], confirm: 'Xác nhận', onSubmit: function (v) { return run({ ref: v.ref }); } });
         else run().catch(function (err) { toast(err.message, 'bad'); });
@@ -800,7 +800,7 @@
       '<label class="check"><input type="checkbox" id="f-active"> Đang chơi</label>' +
       (can('manager') ? '<button class="btn btn-sm" type="button" id="btn-export">Xuất CSV</button>' : '');
     var lp = listPage({
-      id: 'sessions', endpoint: '/api/admin/sessions', defaultSort: 'started_at', exportKind: 'sessions', filtersHtml: extra,
+      id: 'sessions', endpoint: 'api/admin/sessions', defaultSort: 'started_at', exportKind: 'sessions', filtersHtml: extra,
       params: function () {
         return '&q=' + encodeURIComponent($('f-q').value.trim()) + '&reason=' + $('f-reason').value + '&tier=' + encodeURIComponent($('f-tier').value) +
           ($('f-flag').checked ? '&flagged=1' : '') + ($('f-active').checked ? '&status=active' : '');
@@ -828,7 +828,7 @@
 
   function openSession(id) {
     var body = openDrawer('Lượt chơi', '<p class="hint">Đang tải...</p>');
-    api('GET', '/api/admin/sessions/' + encodeURIComponent(id)).then(function (d) {
+    api('GET', 'api/admin/sessions/' + encodeURIComponent(id)).then(function (d) {
       var s = d.session, sum = d.summary || {}, an = d.analysis || {};
       $('drawer-title').textContent = 'Lượt chơi của ' + s.extId;
       var acc = sum.taps ? Math.round(100 * sum.hits / sum.taps) + '%' : '—';
@@ -868,7 +868,7 @@
     var poolHtml = '<section class="card" id="pool-card"><div class="card-head"><div><h2>Kho mã coupon</h2><p>Dùng khi nguồn mã = "Kho mã nhập sẵn": hệ thống lấy lần lượt từng mã cho người đạt mốc</p></div>' +
       (can('manager') ? '<div class="card-tools"><button class="btn btn-sm" type="button" id="btn-pool">Nhập mã vào kho</button></div>' : '') + '</div><div id="pool-body"></div></section>';
     var lp = listPage({
-      id: 'coupons', endpoint: '/api/admin/coupons', defaultSort: 'created_at', exportKind: 'coupons', filtersHtml: extra,
+      id: 'coupons', endpoint: 'api/admin/coupons', defaultSort: 'created_at', exportKind: 'coupons', filtersHtml: extra,
       params: function () { return '&q=' + encodeURIComponent($('f-q').value.trim()) + '&tier=' + encodeURIComponent($('f-tier').value) + '&status=' + $('f-status').value; },
       bindFilters: function (reload) {
         $('f-q').addEventListener('input', debounce(reload, 400));
@@ -901,7 +901,7 @@
           { name: 'codes', label: 'Danh sách mã', type: 'textarea', rows: 8 }
         ],
         confirm: 'Nhập kho',
-        onSubmit: function (v) { return api('POST', '/api/admin/pool/import', v).then(function (r) { toast('Đã thêm ' + r.added + ' mã · trùng ' + r.dup + ' · sai định dạng ' + r.bad); loadPool(); }); }
+        onSubmit: function (v) { return api('POST', 'api/admin/pool/import', v).then(function (r) { toast('Đã thêm ' + r.added + ' mã · trùng ' + r.dup + ' · sai định dạng ' + r.bad); loadPool(); }); }
       });
     });
     if ($('btn-bulk')) $('btn-bulk').addEventListener('click', function () {
@@ -909,12 +909,12 @@
         title: 'Nhập danh sách coupon đã sử dụng', text: 'Dùng khi hệ thống billing chưa gọi webhook tự động: dán danh sách mã đã được dùng để tính conversion.',
         fields: [{ name: 'codes', label: 'Danh sách mã', type: 'textarea', rows: 8 }, { name: 'ref', label: 'Ghi chú / nguồn (tuỳ chọn)', placeholder: 'vd: Báo cáo billing 31/10' }],
         confirm: 'Cập nhật',
-        onSubmit: function (v) { return api('POST', '/api/admin/coupons/redeem-bulk', v).then(function (r) { toast('Đã đánh dấu ' + r.ok + ' mã · không tìm thấy ' + r.notFound + ' · bỏ qua ' + r.skipped); lp.reload(); }); }
+        onSubmit: function (v) { return api('POST', 'api/admin/coupons/redeem-bulk', v).then(function (r) { toast('Đã đánh dấu ' + r.ok + ' mã · không tìm thấy ' + r.notFound + ' · bỏ qua ' + r.skipped); lp.reload(); }); }
       });
     });
   }
   function loadPool() {
-    api('GET', '/api/admin/pool').then(function (d) {
+    api('GET', 'api/admin/pool').then(function (d) {
       var rows = S.meta.tiers.filter(function (t) { return t.reward; }).map(function (t) {
         var p = d.pool.find(function (x) { return x.tier_id === t.id; }) || { total: 0, free: 0 };
         return [t.short || t.label, fmtNum(p.total), fmtNum(p.free), fmtNum(p.total - p.free)];
@@ -936,7 +936,7 @@
 
   function pageSettings() {
     view.innerHTML = '<p class="hint">Đang tải cấu hình...</p>';
-    api('GET', '/api/admin/settings').then(function (d) {
+    api('GET', 'api/admin/settings').then(function (d) {
       S.settings = d.settings; S.settingsVersion = d.version; S.presets = d.presets; S.history = d.history; S.couponApi = d.env.couponApi;
       if (!S.draft || !isDirtyAgainst(d.settings)) S.draft = clone(d.settings);
       renderSettings();
@@ -1049,7 +1049,7 @@
       inp('antiCheat.minMedianReactionMs', 'Cảnh báo nếu phản xạ trung vị < (ms)', 'int') + inp('antiCheat.maxTapRate', 'Nghi auto click nếu đập > (lần/giây) và gần như không trượt', 'int') +
       inp('antiCheat.slowClockRatio', 'Cảnh báo nếu đồng hồ game/thật <', 'num', { step: '0.01' }) + inp('antiCheat.abandonMinutes', 'Tự kết thúc lượt bỏ dở sau (phút)', 'int') +
       inp('antiCheat.idleSeconds', 'Tự kết thúc lượt khi không thao tác (giây)', 'int', { min: 0, max: 600, hint: '0 = tắt' }) +
-      inp('antiCheat.autoBanAfter', 'Tự khoá người chơi sau (lượt gian lận)', 'int', { min: 0, max: 100, hint: '0 = không tự khoá' }) +
+      inp('antiCheat.autoBanAfter', 'Tạm khoá khi gian lận liên tiếp (số lượt)', 'int', { min: 0, max: 100, hint: '0 = không tạm khoá' }) + inp('antiCheat.lockHours', 'Thời gian tạm khoá (giờ)', 'int', { min: 1, max: 720 }) +
       inp('antiCheat.blockSuspicious', 'Chặn ngay lượt có dấu hiệu gian lận / auto click (huỷ điểm, không cấp coupon, báo cho người chơi)', 'bool', { wide: true }) + '</div>');
     html += '</div>';
     // cột phải
@@ -1115,11 +1115,11 @@
     if (save) save.addEventListener('click', function () {
       $('set-error').textContent = '';
       save.classList.add('is-loading');
-      api('PUT', '/api/admin/settings', { settings: S.draft, note: $('set-note').value }).then(function (r) {
+      api('PUT', 'api/admin/settings', { settings: S.draft, note: $('set-note').value }).then(function (r) {
         save.classList.remove('is-loading');
         toast('Đã lưu cấu hình v' + r.version, 'good');
         S.draft = null;
-        return api('GET', '/api/admin/overview-meta').then(function (m) { S.meta = m; paintTop(); pageSettings(); });
+        return api('GET', 'api/admin/overview-meta').then(function (m) { S.meta = m; paintTop(); pageSettings(); });
       }).catch(function (e) {
         save.classList.remove('is-loading');
         $('set-error').textContent = e.data && e.data.errors ? e.data.errors.join(' ') : e.message;
@@ -1130,7 +1130,7 @@
     var test = $('set-test');
     if (test) test.addEventListener('click', function () {
       var w = window.open('about:blank', '_blank');
-      api('POST', '/api/admin/test-token', {}).then(function (r) {
+      api('POST', 'api/admin/test-token', {}).then(function (r) {
         if (w) { w.opener = null; w.location = location.origin + r.url; } else window.location.href = r.url;
         toast('Đã mở game bằng tài khoản test ' + r.player + (isDirty() ? ' (lưu ý: thay đổi chưa lưu sẽ chưa áp dụng)' : ''));
       }).catch(function (e) { if (w) w.close(); toast(e.message, 'bad'); });
@@ -1139,10 +1139,10 @@
       b.addEventListener('click', function () {
         var v = b.getAttribute('data-restore');
         confirmBox('Khôi phục cấu hình v' + v + '?', 'Hệ thống tạo một phiên bản mới với nội dung của v' + v + '.', function () {
-          return api('POST', '/api/admin/settings/restore/' + v, {}).then(function (r) {
+          return api('POST', 'api/admin/settings/restore/' + v, {}).then(function (r) {
             toast('Đã khôi phục thành v' + r.version, 'good');
             S.draft = null;
-            return api('GET', '/api/admin/overview-meta').then(function (m) { S.meta = m; paintTop(); pageSettings(); });
+            return api('GET', 'api/admin/overview-meta').then(function (m) { S.meta = m; paintTop(); pageSettings(); });
           });
         });
       });
@@ -1196,14 +1196,14 @@
 
   // ================================================================ MÔ PHỎNG
   function pageSimulate() {
-    if (!S.settings) { view.innerHTML = '<p class="hint">Đang tải cấu hình...</p>'; api('GET', '/api/admin/settings').then(function (d) { S.settings = d.settings; S.settingsVersion = d.version; S.presets = d.presets; S.history = d.history; S.couponApi = d.env.couponApi; if (S.route === 'simulate') pageSimulate(); }).catch(function (e) { toast(e.message, 'bad'); }); return; }
+    if (!S.settings) { view.innerHTML = '<p class="hint">Đang tải cấu hình...</p>'; api('GET', 'api/admin/settings').then(function (d) { S.settings = d.settings; S.settingsVersion = d.version; S.presets = d.presets; S.history = d.history; S.couponApi = d.env.couponApi; if (S.route === 'simulate') pageSimulate(); }).catch(function (e) { toast(e.message, 'bad'); }); return; }
     var usingDraft = S.draft && isDirty();
     view.innerHTML = '<section class="card prose"><div class="card-head"><div><h2>Mô phỏng độ khó</h2><p>Ước lượng bằng người chơi giả lập trên chính bộ máy game — dùng để so sánh khi chỉnh thông số</p></div>' +
       '<div class="card-tools"><label class="field"><span>Số ván / nhóm</span><select id="sim-n"><option>200</option><option selected>400</option><option>800</option></select></label><button class="btn btn-primary" type="button" id="sim-run">Chạy mô phỏng</button></div></div>' +
       '<p>Cấu hình dùng để mô phỏng: <b>' + (usingDraft ? 'bản đang soạn (chưa lưu)' : 'bản đang áp dụng v' + (S.settingsVersion || '')) + '</b>. ' +
       'Ba nhóm người chơi giả lập có phản xạ, độ chính xác và xác suất lỡ tay đập bom khác nhau. Đây là <b>ước lượng tương đối</b> — hãy đối chiếu với số liệu thật ở trang Tổng quan sau khi cho người thật chơi thử.</p>' +
       '<div id="sim-out"></div></section><section class="card"><div class="card-head"><div><h2>Đường cong độ khó</h2><p>Theo thời gian chơi (giây)</p></div></div><div class="grid-2" id="diff-preview"></div></section>';
-    var ensure = S.settings ? Promise.resolve() : api('GET', '/api/admin/settings').then(function (d) { S.settings = d.settings; S.settingsVersion = d.version; S.presets = d.presets; S.history = d.history; });
+    var ensure = S.settings ? Promise.resolve() : api('GET', 'api/admin/settings').then(function (d) { S.settings = d.settings; S.settingsVersion = d.version; S.presets = d.presets; S.history = d.history; });
     ensure.then(function () {
       if (!S.draft) S.draft = clone(S.settings);
       drawDifficultyPreview();
@@ -1263,7 +1263,7 @@
     var page = 1;
     view.innerHTML = '<section class="card"><div class="card-head"><div><h2>Nhật ký thao tác quản trị</h2><p>Mọi thao tác đăng nhập, sửa cấu hình, xử lý coupon/người chơi, xuất dữ liệu đều được ghi lại</p></div></div><div id="audit-body"></div></section>';
     function load() {
-      api('GET', '/api/admin/audit?page=' + page).then(function (d) {
+      api('GET', 'api/admin/audit?page=' + page).then(function (d) {
         var pages = Math.max(1, Math.ceil(d.total / 100));
         $('audit-body').innerHTML = '<div class="table-wrap"><table class="t"><thead><tr><th>Thời gian</th><th>Người thực hiện</th><th>Hành động</th><th>Đối tượng</th><th>Chi tiết</th><th>IP</th></tr></thead><tbody>' +
           (d.rows.length ? d.rows.map(function (r) {
@@ -1285,12 +1285,12 @@
     view.innerHTML = '<section class="card"><div class="card-head"><div><h2>Tài khoản quản trị</h2><p>Chỉ xem: xem số liệu (mã coupon bị che) · Quản lý: sửa cấu hình, xử lý coupon & người chơi, xuất dữ liệu · Quản trị cao nhất: thêm quản lý tài khoản & dữ liệu</p></div>' +
       '<div class="card-tools"><button class="btn btn-sm btn-primary" type="button" id="ad-new">Thêm tài khoản</button></div></div><div id="ad-body"></div></section>' +
       '<section class="card"><div class="card-head"><div><h2>Dữ liệu</h2><p>Các thao tác dưới đây được ghi nhật ký</p></div></div><div class="actions-row">' +
-      '<a class="btn" href="/api/admin/backup">Tải bản sao lưu cơ sở dữ liệu</a>' +
+      '<a class="btn" href="api/admin/backup">Tải bản sao lưu cơ sở dữ liệu</a>' +
       '<button class="btn" type="button" id="ad-purge">Xoá dữ liệu test</button>' +
       '<button class="btn btn-danger" type="button" id="ad-reset">Xoá toàn bộ dữ liệu người chơi</button></div>' +
       '<p class="hint" style="margin-top:10px">Nên "Xoá dữ liệu test" ngay trước khi mở chương trình chính thức. Cấu hình game, tài khoản quản trị và kho mã coupon không bị ảnh hưởng.</p></section>';
     function load() {
-      api('GET', '/api/admin/admins').then(function (d) {
+      api('GET', 'api/admin/admins').then(function (d) {
         $('ad-body').innerHTML = '<div class="table-wrap"><table class="t"><thead><tr><th>Tên đăng nhập</th><th>Vai trò</th><th>Trạng thái</th><th>Đăng nhập gần nhất</th><th></th></tr></thead><tbody>' + d.rows.map(function (a) {
           var self = a.id === S.me.id;
           return '<tr><td><b>' + esc(a.username) + '</b>' + (self ? ' <span class="tag info">bạn</span>' : '') + '</td><td>' + (self ? esc(d.roles[a.role]) : '<select data-role-id="' + a.id + '">' + Object.keys(d.roles).map(function (r) { return '<option value="' + r + '"' + (r === a.role ? ' selected' : '') + '>' + esc(d.roles[r]) + '</option>'; }).join('') + '</select>') +
@@ -1298,16 +1298,16 @@
             '</td><td class="nowrap">' + fmtDT(a.last_login_at) + '</td><td class="nowrap">' + (self ? '' : '<button class="btn btn-sm" type="button" data-reset-id="' + a.id + '">Cấp lại mật khẩu</button> <button class="btn btn-sm btn-ghost" type="button" data-toggle-id="' + a.id + '" data-disabled="' + a.disabled + '">' + (a.disabled ? 'Mở khoá' : 'Khoá') + '</button>') + '</td></tr>';
         }).join('') + '</tbody></table></div>';
         Array.prototype.forEach.call(document.querySelectorAll('[data-role-id]'), function (s) {
-          s.addEventListener('change', function () { api('POST', '/api/admin/admins/' + s.getAttribute('data-role-id'), { action: 'role', role: s.value }).then(function () { toast('Đã đổi vai trò'); }).catch(function (e) { toast(e.message, 'bad'); load(); }); });
+          s.addEventListener('change', function () { api('POST', 'api/admin/admins/' + s.getAttribute('data-role-id'), { action: 'role', role: s.value }).then(function () { toast('Đã đổi vai trò'); }).catch(function (e) { toast(e.message, 'bad'); load(); }); });
         });
         Array.prototype.forEach.call(document.querySelectorAll('[data-reset-id]'), function (b) {
           b.addEventListener('click', function () {
-            api('POST', '/api/admin/admins/' + b.getAttribute('data-reset-id'), { action: 'reset' }).then(function (r) { showSecret('Mật khẩu tạm thời', 'Gửi mật khẩu này cho người dùng qua kênh an toàn. Họ sẽ phải đổi khi đăng nhập.', r.tempPassword); load(); }).catch(function (e) { toast(e.message, 'bad'); });
+            api('POST', 'api/admin/admins/' + b.getAttribute('data-reset-id'), { action: 'reset' }).then(function (r) { showSecret('Mật khẩu tạm thời', 'Gửi mật khẩu này cho người dùng qua kênh an toàn. Họ sẽ phải đổi khi đăng nhập.', r.tempPassword); load(); }).catch(function (e) { toast(e.message, 'bad'); });
           });
         });
         Array.prototype.forEach.call(document.querySelectorAll('[data-toggle-id]'), function (b) {
           b.addEventListener('click', function () {
-            api('POST', '/api/admin/admins/' + b.getAttribute('data-toggle-id'), { action: b.getAttribute('data-disabled') === '1' ? 'enable' : 'disable' }).then(function () { load(); }).catch(function (e) { toast(e.message, 'bad'); });
+            api('POST', 'api/admin/admins/' + b.getAttribute('data-toggle-id'), { action: b.getAttribute('data-disabled') === '1' ? 'enable' : 'disable' }).then(function () { load(); }).catch(function (e) { toast(e.message, 'bad'); });
           });
         });
       }).catch(function (e) { $('ad-body').innerHTML = '<p class="form-error">' + esc(e.message) + '</p>'; });
@@ -1315,15 +1315,15 @@
     load();
     $('ad-new').addEventListener('click', function () {
       dialog({ title: 'Thêm tài khoản quản trị', fields: [{ name: 'username', label: 'Tên đăng nhập', hint: '3–32 ký tự: chữ, số, . _ -' }, { name: 'role', label: 'Vai trò', type: 'select', value: 'viewer', options: [['viewer', 'Chỉ xem'], ['manager', 'Quản lý'], ['superadmin', 'Quản trị cao nhất']] }],
-        confirm: 'Tạo', onSubmit: function (v) { return api('POST', '/api/admin/admins', v).then(function (r) { load(); setTimeout(function () { showSecret('Đã tạo tài khoản ' + r.username, 'Mật khẩu tạm thời (chỉ hiển thị một lần). Người dùng sẽ phải đổi khi đăng nhập lần đầu.', r.tempPassword); }, 50); }); } });
+        confirm: 'Tạo', onSubmit: function (v) { return api('POST', 'api/admin/admins', v).then(function (r) { load(); setTimeout(function () { showSecret('Đã tạo tài khoản ' + r.username, 'Mật khẩu tạm thời (chỉ hiển thị một lần). Người dùng sẽ phải đổi khi đăng nhập lần đầu.', r.tempPassword); }, 50); }); } });
     });
     $('ad-purge').addEventListener('click', function () {
       dialog({ title: 'Xoá dữ liệu test', text: 'Xoá mọi người chơi/lượt chơi/coupon/sự kiện được gắn cờ test (chơi thử, chơi ngoài thời gian chương trình).', fields: [{ name: 'confirm', label: 'Nhập "XOA TEST" để xác nhận' }], confirm: 'Xoá', danger: true,
-        onSubmit: function (v) { return api('POST', '/api/admin/data/purge-test', v).then(function (r) { toast('Đã xoá dữ liệu test (' + r.removedPlayers + ' người chơi test)', 'good'); }); } });
+        onSubmit: function (v) { return api('POST', 'api/admin/data/purge-test', v).then(function (r) { toast('Đã xoá dữ liệu test (' + r.removedPlayers + ' người chơi test)', 'good'); }); } });
     });
     $('ad-reset').addEventListener('click', function () {
       dialog({ title: 'Xoá TOÀN BỘ dữ liệu người chơi', text: 'Không thể hoàn tác. Hãy tải bản sao lưu trước. Xoá người chơi, lượt chơi, coupon, sự kiện (giữ cấu hình, tài khoản quản trị, kho mã).', fields: [{ name: 'confirm', label: 'Nhập "XOA TOAN BO" để xác nhận' }], confirm: 'Xoá vĩnh viễn', danger: true,
-        onSubmit: function (v) { return api('POST', '/api/admin/data/reset', v).then(function () { toast('Đã xoá toàn bộ dữ liệu người chơi', 'good'); }); } });
+        onSubmit: function (v) { return api('POST', 'api/admin/data/reset', v).then(function () { toast('Đã xoá toàn bộ dữ liệu người chơi', 'good'); }); } });
     });
   }
 
