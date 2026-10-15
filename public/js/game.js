@@ -867,10 +867,10 @@
       setTimeout(function (el) { el.remove(); liveParticles--; }.bind(null, p), 680);
     }
   }
-  function floatPoints(H, base, bonus) {
+  function floatPoints(H, base, bonus, hb, hl) {
     var d = document.createElement('div');
     d.className = 'float-pts';
-    d.innerHTML = '<b>+' + base + '</b>' + (bonus ? '<small>+' + bonus + ' combo</small>' : '');
+    d.innerHTML = '<b>+' + base + '</b>' + (hb ? '<small class="fp-hammer fp-h' + hl + '">+' + hb + ' búa</small>' : '') + (bonus ? '<small>+' + bonus + ' combo</small>' : '');
     H.fx.appendChild(d);
     setTimeout(function () { d.remove(); }, 950);
   }
@@ -958,7 +958,8 @@
       $('g-combo-n').textContent = 'x' + c;
       restartClass($('g-combo-n'), 'pop');
       var hi = hl.indexOf(c);
-      var praise = hi >= 0 ? HAMMER_SKINS[hi + 1].name + '!' : (PRAISE[c] || (c > 30 && c % 10 === 0 ? 'Combo x' + c + '!' : ''));
+      var hbp = (G.cfg.combo.hammerBonus || [20, 50, 100])[hi];
+      var praise = hi >= 0 ? HAMMER_SKINS[hi + 1].name + ' +' + hbp + '% điểm!' : (PRAISE[c] || (c > 30 && c % 10 === 0 ? 'Combo x' + c + '!' : ''));
       if (praise) {
         var pr = $('g-combo-praise');
         pr.textContent = praise;
@@ -1008,7 +1009,7 @@
     // hạ gục
     Sound.play('kill', { combo: r.combo });
     particles(H, type, type.indexOf('pumpkin') === 0 ? 9 : 7);
-    floatPoints(H, r.base, r.bonus);
+    floatPoints(H, r.base, r.bonus, r.hammer, r.hammerLevel);
     if (type === 'pumpkinCloth' && r.hitNo === 1) flyHat(H, 'cloth');
     var sc = $('g-score');
     sc.textContent = fmtNum(G.game.score);
@@ -1428,8 +1429,9 @@
     // Bom đặc biệt nên để cuối cùng
     if (g.items.bomb && g.items.bomb.enabled) items += card('danger', 'bomb', g.items.bomb.label, Art.icon('bomb'), ['Không', 'được đập!']);
     var hl = (g.combo && g.combo.hammer && g.combo.hammer.length === 3) ? g.combo.hammer : [3, 5, 8];
+    var hbn = (g.combo && g.combo.hammerBonus && g.combo.hammerBonus.length === 3) ? g.combo.hammerBonus : [20, 50, 100];
     var hammers = [1, 2, 3].map(function (lv) {
-      return card('hammer-card', '', HAMMER_SKINS[lv].name, '<div class="hammer-ico hm-skin" data-skin="' + HAMMER_SKINS[lv].key + '">' + Art.hammer() + '</div>', ['Combo x' + hl[lv - 1]]);
+      return card('hammer-card', '', HAMMER_SKINS[lv].name, '<div class="hammer-ico hm-skin" data-skin="' + HAMMER_SKINS[lv].key + '">' + Art.hammer() + '</div>', ['Combo x' + hl[lv - 1], '+' + hbn[lv - 1] + '% điểm']);
     }).join('');
     var rewards = g.tiers.filter(function (t) { return t.reward; }).sort(function (a, b) { return a.score - b.score; });
     var tierRows = rewards.map(function (t) {
@@ -1444,7 +1446,7 @@
         '<span class="kb-pad" aria-hidden="true">' + [7, 8, 9, 4, 5, 6, 1, 2, 3].map(function (n) { return '<i>' + n + '</i>'; }).join('') + '</span></span></li></ul></section>' +
       '<section><h3>2. Vật phẩm &amp; điểm</h3><div class="items-grid">' + items + '</div>' +
       '<p class="guide-warn">⚠️ Bom có thể hóa trang trà trộn vào vật phẩm, hãy tinh mắt chú ý</p>' +
-      '<p class="guide-sub">Đập càng nhiều combo, càng có cơ hội nhận búa xịn</p><div class="items-grid hammers-grid">' + hammers + '</div></section>' +
+      '<p class="guide-sub">Đập càng nhiều combo, càng có cơ hội nhận búa xịn — búa càng xịn, mỗi vật phẩm hạ gục càng được cộng thêm nhiều điểm</p><div class="items-grid hammers-grid">' + hammers + '</div></section>' +
       '<section><h3>3. Thể lệ nhận voucher</h3><table class="tier-table"><tbody>' + tierRows + '</tbody></table></section>' +
       '<section><h3>4. Lưu ý</h3><ul>' +
       '<li>Chương trình diễn ra từ ' + esc(c.periodText || (fmtDate(c.start) + ' – ' + fmtDate(c.end))) + '.</li>' +

@@ -58,7 +58,7 @@ function defaults() {
       periodText: '26/10 – 31/10/2026'
     },
     turns: { max: 3, regenMinutes: 10 },
-    combo: { windowMs: 1500, bonus: [0, 0, 2, 3, 4, 5], hammer: [3, 5, 8] },
+    combo: { windowMs: 1500, bonus: [0, 0, 2, 3, 4, 5], hammer: [3, 5, 8], hammerBonus: [20, 50, 100] },
     bombs: { strikes: 2, disguiseLevel: 3, disguiseLevel2: 5, disguisePct: 40 },
     boss: { enabled: true, firstLevel: 4, everyLevels: 3 },
     items: {
@@ -206,7 +206,8 @@ function sanitize(input) {
   bonus[0] = 0;
   let hammer = Array.isArray(co.hammer) && co.hammer.length === 3 ? co.hammer.map((x, i) => int(x, 2, 99, D.combo.hammer[i])) : D.combo.hammer;
   if (!(hammer[0] < hammer[1] && hammer[1] < hammer[2])) errors.push('Mốc combo nâng cấp búa phải tăng dần (băng < lửa < kim cang).');
-  out.combo = { windowMs: int(co.windowMs, 300, 10000, D.combo.windowMs), bonus, hammer };
+  const hammerBonus = Array.isArray(co.hammerBonus) && co.hammerBonus.length === 3 ? co.hammerBonus.map((x, i) => int(x, 0, 500, D.combo.hammerBonus[i])) : D.combo.hammerBonus;
+  out.combo = { windowMs: int(co.windowMs, 300, 10000, D.combo.windowMs), bonus, hammer, hammerBonus };
 
   const sb = src.bombs || {};
   out.bombs = {

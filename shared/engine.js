@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 4;
+  var VERSION = 5;
   var HOLES = 9;
 
   // Mốc thời gian hiển thị (ms). rise/sink chỉ là hiệu ứng; ko = thời gian vật phẩm
@@ -270,6 +270,17 @@
   };
 
   // ---------------------------------------------------------------- Ván chơi
+  // Cấp búa theo chuỗi combo hiện có: 0 = Sấm Sét, 1 = Băng Long, 2 = Hỏa Long, 3 = Kim Cang
+  function hammerLevel(cfg, combo) {
+    var h = cfg.combo.hammer && cfg.combo.hammer.length === 3 ? cfg.combo.hammer : [3, 5, 8];
+    return combo >= h[2] ? 3 : combo >= h[1] ? 2 : combo >= h[0] ? 1 : 0;
+  }
+  // % điểm cộng thêm của từng cấp búa (số nguyên, làm tròn xuống -> tất định)
+  function hammerBonus(cfg, level, base) {
+    var b = cfg.combo.hammerBonus && cfg.combo.hammerBonus.length === 3 ? cfg.combo.hammerBonus : [20, 50, 100];
+    return level > 0 ? Math.floor(base * (b[level - 1] | 0) / 100) : 0;
+  }
+
   function comboBonus(cfg, combo) {
     var table = cfg.combo.bonus;
     if (!table || !table.length || combo <= 0) return 0;
@@ -378,16 +389,20 @@
     if (c >= s.hp) {
       this.endAt[s.id] = t;
       this.kills++;
+      // búa đang cầm lúc đập (tính theo chuỗi combo TRƯỚC cú hạ gục này)
+      var hl = hammerLevel(this.cfg, this.combo);
       this.combo++;
       if (this.combo > this.maxCombo) this.maxCombo = this.combo;
       var item = this.cfg.items[s.type];
       var base = item ? (item.points | 0) : 0;
       var bonus = comboBonus(this.cfg, this.combo);
-      this.score += base + bonus;
+      var hb = hammerBonus(this.cfg, hl, base);
+      this.score += base + bonus + hb;
       this.pointsBase += base;
       this.pointsCombo += bonus;
+      this.pointsHammer = (this.pointsHammer || 0) + hb;
       this.killsByType[s.type] = (this.killsByType[s.type] || 0) + 1;
-      return { kind: 'kill', t: t, hole: hole, spawn: s, base: base, bonus: bonus, points: base + bonus, combo: this.combo, hitNo: c };
+      return { kind: 'kill', t: t, hole: hole, spawn: s, base: base, bonus: bonus, hammer: hb, hammerLevel: hl, points: base + bonus + hb, combo: this.combo, hitNo: c };
     }
     var hold = s.type.indexOf('boss') === 0 ? Math.round(this.hold * BOSS_HOLD_FACTOR / 100) : this.hold;
     if (t + hold > this.endOf(s)) this.until[s.id] = t + hold;
@@ -577,6 +592,8 @@
     createRng: createRng,
     difficultyAt: difficultyAt,
     comboBonus: comboBonus,
+    hammerLevel: hammerLevel,
+    hammerBonus: hammerBonus,
     Spawner: Spawner,
     Game: Game,
     replay: replay,

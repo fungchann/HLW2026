@@ -499,6 +499,10 @@ button, input { font: inherit; }
 .kb-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .kb-pad { flex: none; display: grid; grid-template-columns: repeat(3, 20px); gap: 3px; padding: 4px; border-radius: 8px; background: rgba(26, 5, 2, .6); border: 2px solid var(--line); }
 .kb-pad i { display: grid; place-items: center; height: 20px; border-radius: 4px; background: var(--bone); color: var(--ink); font-style: normal; font-size: .72rem; font-weight: 800; box-shadow: 0 2px 0 var(--ink); }
+.float-pts .fp-hammer { display: block; font-weight: 800; }
+.float-pts .fp-h1 { color: #9fe3ff; }
+.float-pts .fp-h2 { color: #ffb347; }
+.float-pts .fp-h3 { color: #ffd23f; }
 .cp-list { display: grid; gap: 22px; padding-top: 14px; }
 .cp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .cp-voucher { padding: 18px 18px 12px; }

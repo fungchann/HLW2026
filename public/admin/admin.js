@@ -995,6 +995,7 @@
     html += section('combo', 'Combo', 'Chuỗi bị ngắt nếu khoảng cách giữa 2 cú đập trúng lớn hơn thời gian combo', '<div class="form-grid">' +
       inp('combo.windowMs', 'Thời gian giữ combo (ms)', 'int', { min: 300, max: 10000, hint: '1500 = 1,5 giây' }) + bonusInputs +
       inp('combo.hammer.0', 'Combo nhận Búa Băng Long', 'int', { min: 2, max: 99 }) + inp('combo.hammer.1', 'Combo nhận Búa Hỏa Long', 'int', { min: 2, max: 99 }) + inp('combo.hammer.2', 'Combo nhận Búa Kim Cang', 'int', { min: 2, max: 99 }) +
+      inp('combo.hammerBonus.0', 'Búa Băng Long: cộng thêm (% điểm vật phẩm)', 'int', { min: 0, max: 500 }) + inp('combo.hammerBonus.1', 'Búa Hỏa Long: cộng thêm (%)', 'int', { min: 0, max: 500 }) + inp('combo.hammerBonus.2', 'Búa Kim Cang: cộng thêm (%)', 'int', { min: 0, max: 500 }) +
       (man ? '<div class="field"><span>Số mức thưởng</span><div class="actions-row"><button class="btn btn-sm" type="button" id="cb-add">+ Thêm mức</button><button class="btn btn-sm" type="button" id="cb-del"' + (bonus.length <= 3 ? ' disabled' : '') + '>− Bớt mức</button></div></div>' : '') + '</div>');
     var itemRows = ['pumpkin', 'pumpkinCloth', 'pumpkinIron', 'ghost', 'virus', 'potion', 'candy'].map(function (k) {
       return '<tr><td><label class="check"><input type="checkbox" data-path="items.' + k + '.enabled" data-type="bool"' + (d.items[k].enabled ? ' checked' : '') + (man ? '' : ' disabled') + '> ' + esc(ITEM_NAMES[k]) + '</label></td>' +
