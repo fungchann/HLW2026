@@ -1440,7 +1440,7 @@
       '<li>Bạn hãy dùng chiếc búa sấm sét của Thor để đập hội bí ngô và đám quái Halloween đang quậy phá.</li>' +
       '<li>Đập trúng liên tiếp để giữ combo và nhận thêm điểm; chậm tay hoặc trúng bom sẽ mất chuỗi.</li>' +
       '<li>Mỗi tài khoản có tối đa ' + g.turns.max + ' lượt, mỗi ' + g.turns.regenMinutes + ' phút hồi sinh 1 lượt chơi.</li>' +
-      '<li><span class="kb-row"><span>Trên máy tính có thể chơi bằng <b>bàn phím số 1–9</b> (numpad): mỗi phím ứng với 1 ô đúng vị trí như hình.</span>' +
+      '<li><span class="kb-row"><span>Trên máy tính có thể chơi bằng <b>chuột</b> hoặc <b>bàn phím số 1–9</b> (numpad): mỗi phím ứng với 1 ô đúng vị trí như hình.</span>' +
         '<span class="kb-pad" aria-hidden="true">' + [7, 8, 9, 4, 5, 6, 1, 2, 3].map(function (n) { return '<i>' + n + '</i>'; }).join('') + '</span></span></li></ul></section>' +
       '<section><h3>2. Vật phẩm &amp; điểm</h3><div class="items-grid">' + items + '</div>' +
       '<p class="guide-warn">⚠️ Bom có thể hóa trang trà trộn vào vật phẩm, hãy tinh mắt chú ý</p>' +
