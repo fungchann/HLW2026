@@ -637,9 +637,14 @@
     Sound.unlock();
     Sound.play('click');
     var btn = $('btn-start');
+    if (botProbe()) {
+      showMessage({ title: 'Không thể bắt đầu', text: 'Hệ thống phát hiện trình duyệt đang bị điều khiển bởi công cụ tự động hoặc trợ lý AI. Vui lòng tắt các công cụ/tiện ích này rồi tải lại trang để chơi.', mood: 'sad' });
+      return;
+    }
+    Bot.reported = false; Bot.jumps = 0; Bot.mouseTaps = 0; Bot.moves = 0; Bot.unfocused = 0; Bot.tapX = Bot.tapY = null;
     G.starting = true;
     btn.classList.add('is-loading');
-    API.post('/api/game/start', { engine: E.VERSION, device: deviceInfo() }).then(function (data) {
+    API.post('/api/game/start', { engine: E.VERSION, device: deviceInfo(), bot: Bot.reason || undefined }).then(function (data) {
       App.me.turns = data.turns;
       setupGame(data, null);
       return runCountdown(false).then(beginPlay);
@@ -731,6 +736,41 @@
     return t;
   }
 
+  // ================================================================ phát hiện máy/AI chơi hộ
+  // Bất kỳ dấu hiệu nào dưới đây -> báo máy chủ huỷ lượt ngay (máy chủ chỉ dùng tín hiệu này để HUỶ, không bao giờ để cộng điểm).
+  //  synthetic : thao tác do script/tiện ích tạo ra (sự kiện không phải từ người dùng thật)
+  //  webdriver : trình duyệt đang bị điều khiển bằng công cụ tự động (Selenium, Playwright, Puppeteer...)
+  //  unfocused : thao tác đến trong khi trang game KHÔNG được chọn (người dùng đang ở khung chat của trợ lý AI,
+  //              AI tự bấm vào trang) — người thật bấm vào trang thì trang luôn được chọn
+  //  mouse_jump: chuột "nhảy cóc" thẳng tới đúng ô mà không có đường di chuyển (AI/script bấm theo toạ độ)
+  var Bot = { reason: null, reported: false, tapX: null, tapY: null, moves: 0, jumps: 0, mouseTaps: 0, unfocused: 0 };
+  function botProbe() {
+    if (Bot.reason) return Bot.reason;
+    try { if (navigator.webdriver) return (Bot.reason = 'webdriver'); } catch (e) { /* bỏ qua */ }
+    return null;
+  }
+  function botDetected(reason) {
+    if (!Bot.reason) Bot.reason = reason;
+    if (G.state !== 'playing' || Bot.reported) return;
+    Bot.reported = true;
+    sync(false);
+  }
+  document.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') Bot.moves++; }, { passive: true });
+  function checkTap(e) {
+    // trang không được chọn mà vẫn nhận cú đập -> có thứ khác đang bấm hộ
+    var focused = true;
+    try { focused = document.hasFocus(); } catch (x) { /* bỏ qua */ }
+    if (!focused && ++Bot.unfocused >= 3) { botDetected('unfocused'); return; }
+    if (e.pointerType !== 'mouse') return;
+    // chỉ xét những lần CHUYỂN sang ô khác (đập liên tiếp tại chỗ thì người thật cũng không cần di chuột).
+    // Người thật kéo chuột qua nhiều điểm; script/AI bấm theo toạ độ thì "dịch chuyển tức thời" (0–1 sự kiện di chuyển)
+    var far = Bot.tapX === null || Math.abs(e.clientX - Bot.tapX) > 40 || Math.abs(e.clientY - Bot.tapY) > 40;
+    if (far) { Bot.mouseTaps++; if (Bot.moves <= 1) Bot.jumps++; }
+    Bot.moves = 0; Bot.tapX = e.clientX; Bot.tapY = e.clientY;
+    if (Bot.jumps >= 4 && Bot.jumps / Bot.mouseTaps >= 0.6) botDetected('mouse_jump');
+  }
+  setInterval(function () { if (G.state === 'playing' && botProbe()) botDetected(Bot.reason); }, 1500);
+
   function tapHole(h, ts) {
     if (G.state !== 'playing') return;
     var t = eventGameTime(ts);
@@ -746,6 +786,8 @@
     var holeEl = e.target.closest('.hole');
     if (!holeEl) return;
     e.preventDefault();
+    if (!e.isTrusted) { botDetected('synthetic'); return; }
+    checkTap(e);
     Sound.unlock();
     swingHammer(e.clientX, e.clientY, e.pointerType);
     tapHole(+holeEl.getAttribute('data-i'), e.timeStamp);
@@ -785,6 +827,8 @@
     if (G.state === 'playing') {
       if (KEYMAP[e.code] !== undefined && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
+        if (!e.isTrusted) { botDetected('synthetic'); return; }
+        try { if (!document.hasFocus() && ++Bot.unfocused >= 3) { botDetected('unfocused'); return; } } catch (x) { /* bỏ qua */ }
         tapHole(KEYMAP[e.code], e.timeStamp);
         var H = G.holes[KEYMAP[e.code]];
         var r = H.el.getBoundingClientRect();
@@ -994,6 +1038,7 @@
     G.syncing = true;
     var batch = G.events.slice(G.acked, G.acked + 700);
     var body = { sid: G.sid, base: G.acked, ev: batch, gt: Math.floor(gameNow()), paused: !!paused };
+    if (Bot.reason) body.bot = Bot.reason;
     return API.post('/api/game/sync', body, { keepalive: !!(opts && opts.keepalive) }).then(function (d) {
       if (d.ended) { serverEnded(d.result); return; }
       if (d.acked > G.acked) G.acked = d.acked;
@@ -1032,7 +1077,7 @@
       return sync(true).then(function () { return G.events.length - G.acked > 700 ? sleep(300).then(flush) : null; });
     }
     function send() {
-      return API.post('/api/game/finish', { sid: G.sid, base: G.acked, ev: G.events.slice(G.acked), gt: Math.floor(gt), reason: reason })
+      return API.post('/api/game/finish', { sid: G.sid, base: G.acked, ev: G.events.slice(G.acked), gt: Math.floor(gt), reason: reason, bot: Bot.reason || undefined })
         .then(function (d) { G.sid = null; return d.result; })
         .catch(function (e) {
           if (e.code === 'resync' && e.data && e.data.acked !== undefined) { G.acked = e.data.acked; return send(); }
@@ -1296,15 +1341,16 @@
     me.turns = res.turns;
     var aw = res.award || {}, tier = aw.tier, cp = aw.coupon;
     var won = aw.status === 'issued' || aw.status === 'pending' || aw.status === 'held';
-    var mood = won ? 'happy' : (how === 'bomb' ? 'sad' : 'idle');
+    var cheat = aw.status === 'invalid';
+    var mood = won ? 'happy' : (how === 'bomb' || cheat ? 'sad' : 'idle');
     var expires = (cp && cp.expiresAt) || me.guide.couponExpiresAt;
     var h = '<div class="res-mascot">' + Art.mascot(mood) + '</div>';
-    h += '<h2 class="res-title" id="res-title">' + esc(res.message || (won ? 'Chúc mừng bạn!' : 'Cố lên nhé!')) + '</h2>';
+    h += '<h2 class="res-title" id="res-title">' + esc(cheat ? 'Phát hiện chơi hộ / gian lận!' : (res.message || (won ? 'Chúc mừng bạn!' : 'Cố lên nhé!'))) + '</h2>';
     h += '<div class="res-score"><span>Điểm</span><b>' + fmtNum(res.score) + '</b>' + (res.newBest ? '<em class="badge-best">Kỷ lục mới!</em>' : '') + '</div>';
     h += '<div class="res-stats"><span>Combo x' + res.maxCombo + '</span><span>Level ' + res.level + '</span><span>' + fmtDur(res.durationMs) + '</span></div>';
     if (res.endReason === 'idle') h += '<p class="res-note">Lượt chơi tự kết thúc vì bạn không thao tác trong ' + Math.round(((G.cfg && G.cfg.rules && G.cfg.rules.idleMs) || 10000) / 1000) + ' giây.</p>';
     if (aw.status === 'invalid') {
-      h += '<div class="res-block"><b>Lượt chơi đã bị huỷ</b>Hệ thống phát hiện thao tác bất thường (công cụ tự động, can thiệp dữ liệu hoặc tốc độ không phải của người chơi). Kết quả không được ghi nhận và không được nhận voucher.' +
+      h += '<div class="res-block"><b>Lượt chơi đã bị huỷ</b>Hệ thống phát hiện thao tác bất thường (công cụ tự động, trợ lý AI chơi hộ, tiện ích điều khiển trình duyệt, can thiệp dữ liệu hoặc tốc độ không phải của người chơi). Kết quả không được ghi nhận và không được nhận voucher.' +
         (res.banned ? '<br><b>Tài khoản của bạn đã bị tạm khoá do vi phạm nhiều lần.</b>' : ' Tiếp tục vi phạm, tài khoản sẽ bị khoá.') + '</div>';
     } else if (won && tier) {
       h += voucherHtml(tier, '', aw.status === 'held' ? 'Đang xác minh' : '', aw.status === 'held' ? 's-held' : '', expires);

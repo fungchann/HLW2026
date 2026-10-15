@@ -374,6 +374,22 @@ async function playSession(token, targetScore, opts) {
     assert.strictEqual(relog.data.error, 'banned');
   });
 
+  await step('Gian lận: trình duyệt báo có AI/công cụ chơi hộ -> từ chối bắt đầu; đang chơi thì huỷ lượt ngay', async () => {
+    const tk = (await api('POST', '/api/auth/guest', { key: sec.randomToken(24) })).data.accessToken;
+    const no = await api('POST', '/api/game/start', { engine: Engine.VERSION, bot: 'webdriver' }, { token: tk });
+    assert.strictEqual(no.status, 403); assert.strictEqual(no.data.error, 'automation');
+    const st = await api('POST', '/api/game/start', { engine: Engine.VERSION }, { token: tk });
+    backdate(st.data.sessionId, 8000);
+    const r = await api('POST', '/api/game/sync', { sid: st.data.sessionId, base: 0, ev: [], gt: 3000, bot: 'mouse_jump' }, { token: tk });
+    assert.strictEqual(r.data.ended, true);
+    assert.strictEqual(r.data.result.award.status, 'invalid');
+    const f = JSON.parse(db.get('SELECT flags_json FROM sessions WHERE id = ?', st.data.sessionId).flags_json);
+    assert.ok(JSON.stringify(f).includes('bot_mouse_jump'));
+    // giá trị lạ bị bỏ qua (không cho lợi dụng)
+    const st2 = await api('POST', '/api/game/start', { engine: Engine.VERSION, bot: '<script>' }, { token: tk });
+    assert.strictEqual(st2.status, 200);
+  });
+
   await step('Chống gian lận: phân tích đồng hồ chậm (speed hack) & phản xạ máy móc', () => {
     const s = settings.current();
     const syncs = [];

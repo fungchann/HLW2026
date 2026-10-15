@@ -78,6 +78,7 @@ function start(req, p, body) {
   }
   const rl = sec.rateLimit('start:' + p.id, 12, 60000);
   if (!rl.ok) throw new HttpError(429, 'rate_limited', 'Thao tác quá nhanh');
+  if (botSignal(body)) throw new HttpError(403, 'automation', 'Hệ thống phát hiện trình duyệt đang bị điều khiển bởi công cụ tự động hoặc trợ lý AI. Vui lòng tắt chúng để chơi.');
 
   // Mỗi người chỉ có 1 lượt đang chạy: lượt cũ (nếu có) được kết thúc trước.
   for (const r of db.all("SELECT id FROM sessions WHERE player_id = ? AND status = 'active'", p.id)) {
@@ -120,8 +121,17 @@ function invalidate(ctx, reason) {
   return ctx.invalid;
 }
 
+// Tín hiệu "máy/AI chơi hộ" do trình duyệt phát hiện. Chỉ dùng để HUỶ lượt (người gian lận không được lợi gì khi tự báo).
+const BOT_SIGNALS = { synthetic: 1, webdriver: 1, unfocused: 1, mouse_jump: 1 };
+function botSignal(body) {
+  const b = body && body.bot;
+  return typeof b === 'string' && BOT_SIGNALS[b] ? b : null;
+}
+
 function ingest(ctx, body, now) {
   const elapsed = now - ctx.row.started_at;
+  const bot = botSignal(body);
+  if (bot) invalidate(ctx, 'bot_' + bot);
   const gt = Math.floor(Number(body.gt));
   if (!Number.isFinite(gt) || gt < 0) throw new HttpError(400, 'bad_request', 'Dữ liệu không hợp lệ');
   if (gt > elapsed + CLOCK_TOLERANCE_MS) invalidate(ctx, 'clock_ahead');

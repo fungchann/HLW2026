@@ -43,7 +43,9 @@
   var FLAG = { slow_clock: 'Đồng hồ chậm bất thường', fast_reaction: 'Phản xạ quá nhanh', tap_rate: 'Tốc độ đập bất thường', too_precise: 'Chính xác bất thường',
     sparse_sync: 'Thiếu dữ liệu đồng bộ', invalid: 'Dữ liệu không hợp lệ', no_bomb_hit: 'Không trúng bom nào',
     clock_ahead: 'Đồng hồ game chạy nhanh hơn thật', clock_backwards: 'Đồng hồ game chạy lùi', batch_too_large: 'Gửi quá nhiều thao tác một lúc',
-    bad_event: 'Dữ liệu thao tác sai định dạng', event_order: 'Thứ tự thao tác bất thường', event_future: 'Thao tác ở thời điểm chưa tới', tap_flood: 'Đập dồn dập (auto click)' };
+    bad_event: 'Dữ liệu thao tác sai định dạng', event_order: 'Thứ tự thao tác bất thường', event_future: 'Thao tác ở thời điểm chưa tới', tap_flood: 'Đập dồn dập (auto click)',
+    bot_synthetic: 'Thao tác giả lập bằng script/tiện ích', bot_webdriver: 'Trình duyệt điều khiển tự động (Selenium/Playwright...)',
+    bot_unfocused: 'Trang game không được chọn mà vẫn có thao tác (trợ lý AI bấm hộ)', bot_mouse_jump: 'Chuột nhảy cóc (AI/script điều khiển chuột)' };
   var ACTION = {
     login: 'Đăng nhập', login_failed: 'Đăng nhập thất bại', password_change: 'Đổi mật khẩu', settings_save: 'Lưu cấu hình', settings_restore: 'Khôi phục cấu hình',
     coupon_revoke: 'Thu hồi coupon', coupon_approve: 'Duyệt coupon', coupon_redeem: 'Đánh dấu coupon đã dùng', coupon_retry: 'Tạo lại mã coupon',
@@ -780,7 +782,7 @@
   }
   function flagTags(flags) {
     if (!flags || !flags.length) return '<span class="hint">—</span>';
-    return '<span class="tags">' + flags.map(function (f) { return '<span class="tag ' + (f.code === 'invalid' ? 'bad' : 'warn') + '" title="' + esc(f.detail || '') + '">' + esc(FLAG[f.code] || f.code) + '</span>'; }).join('') + '</span>';
+    return '<span class="tags">' + flags.map(function (f) { return '<span class="tag ' + (f.code === 'invalid' ? 'bad' : 'warn') + '" title="' + esc(FLAG[f.detail] || f.detail || '') + '">' + esc(f.code === 'invalid' && FLAG[f.detail] ? FLAG[f.detail] : (FLAG[f.code] || f.code)) + '</span>'; }).join('') + '</span>';
   }
   function bindSessionRows(root) {
     Array.prototype.forEach.call(root.querySelectorAll('tr[data-sid]'), function (tr) {
@@ -846,7 +848,7 @@
         dd('Phản xạ trung vị', sum.reactionMedian ? sum.reactionMedian + ' ms' : '—') + dd('Phản xạ nhanh nhất 10%', sum.reactionP10 ? sum.reactionP10 + ' ms' : '—') +
         dd('Tốc độ đập tối đa', fmtNum(sum.maxTapRate) + ' lần/giây') + dd('Tỷ lệ đồng hồ game/thật', an.ratio !== undefined ? an.ratio : '—') + dd('Số lần đồng bộ', fmtNum(s.syncs)) +
         '</dl>';
-      html += '<h3>Phân tích chống gian lận</h3>' + (an.flags && an.flags.length ? '<ul>' + an.flags.map(function (f) { return '<li><b>' + esc(FLAG[f.code] || f.code) + '</b> — ' + esc(f.detail || '') + '</li>'; }).join('') + '</ul>' : '<p class="hint">Không phát hiện bất thường.</p>') +
+      html += '<h3>Phân tích chống gian lận</h3>' + (an.flags && an.flags.length ? '<ul>' + an.flags.map(function (f) { return '<li><b>' + esc(FLAG[f.code] || f.code) + '</b> — ' + esc(FLAG[f.detail] || f.detail || '') + '</li>'; }).join('') + '</ul>' : '<p class="hint">Không phát hiện bất thường.</p>') +
         (an.info && an.info.length ? '<p class="hint">Ghi chú: ' + an.info.map(function (f) { return esc((FLAG[f.code] || f.code) + ' (' + (f.detail || '') + ')'); }).join(', ') + '</p>' : '');
       if (sum.killsByType) {
         var names = { pumpkin: 'Bí ngô', pumpkinCloth: 'Bí nón vải', pumpkinIron: 'Bí nón sắt', ghost: 'Ma', virus: 'Virus', potion: 'Nồi thuốc độc', candy: 'Kẹo' };
