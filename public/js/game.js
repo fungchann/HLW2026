@@ -1488,6 +1488,37 @@
   }
 
   // ================================================================ khởi động
+  // ================================================================ chống thu phóng trên điện thoại
+  // Safari iOS bỏ qua user-scalable=no nên phải chặn bằng sự kiện: chạm nhanh 2 lần, chụm 2 ngón, dblclick.
+  (function noZoom() {
+    var FORM = /^(INPUT|TEXTAREA|SELECT)$/;
+    var lastEnd = 0, lx = -999, ly = -999;
+    document.addEventListener('touchend', function (e) {
+      var now = Date.now(), t = e.changedTouches && e.changedTouches[0];
+      var x = t ? t.clientX : 0, y = t ? t.clientY : 0;
+      // 2 lần chạm nhanh gần cùng 1 chỗ = cử chỉ phóng to của Safari -> chặn lần thứ 2
+      if (now - lastEnd < 400 && Math.abs(x - lx) < 60 && Math.abs(y - ly) < 60 && !FORM.test(e.target.tagName) && e.cancelable) e.preventDefault();
+      lastEnd = now; lx = x; ly = y;
+    }, { passive: false });
+    document.addEventListener('touchmove', function (e) { if (e.touches && e.touches.length > 1 && e.cancelable) e.preventDefault(); }, { passive: false });
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (t) { document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false }); });
+    document.addEventListener('dblclick', function (e) { if (!FORM.test(e.target.tagName)) e.preventDefault(); }, { passive: false });
+    // Trên bàn chơi: chặn luôn hành vi mặc định của chạm (đập vẫn nhận qua pointerdown)
+    var bd = $('board');
+    if (bd) bd.addEventListener('touchstart', function (e) { if (e.cancelable) e.preventDefault(); }, { passive: false });
+    // Lỡ bị phóng to (cài đặt trợ năng, trang Portal bên ngoài...): ép trình duyệt trả về 100%
+    var vv = window.visualViewport, meta = $('meta-vp');
+    if (vv && meta) {
+      var base = meta.getAttribute('content'), busy = false;
+      vv.addEventListener('resize', function () {
+        if (busy || vv.scale <= 1.02) return;
+        busy = true;
+        meta.setAttribute('content', base.replace('maximum-scale=1', 'maximum-scale=1.01'));
+        setTimeout(function () { meta.setAttribute('content', base); busy = false; }, 60);
+      });
+    }
+  })();
+
   function boot() {
     Array.prototype.forEach.call(document.querySelectorAll('.icon-btn.close'), function (b) { b.innerHTML = Art.ui('close'); });
     paintMascots();

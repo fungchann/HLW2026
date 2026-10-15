@@ -112,7 +112,7 @@ function recordOpen(p, device) {
 
 function loginWithPortalToken(req, token, hint) {
   const ip = clientIp(req);
-  const rl = sec.rateLimit('auth:' + ip, 30, 60000);
+  const rl = sec.rateLimit('auth:' + ip, 120, 60000);
   if (!rl.ok) throw new HttpError(429, 'rate_limited', 'Thao tác quá nhanh, thử lại sau ít giây');
   let claims;
   try { claims = sec.verifyPortalJwt(token); } catch (e) {
@@ -139,7 +139,7 @@ function loginWithPortalToken(req, token, hint) {
 function loginDemo(req, id, hint) {
   if (!env.ALLOW_DEMO_LOGIN) throw new HttpError(404, 'not_found', 'Không hỗ trợ');
   const ip = clientIp(req);
-  const rl = sec.rateLimit('auth:' + ip, 30, 60000);
+  const rl = sec.rateLimit('auth:' + ip, 120, 60000);
   if (!rl.ok) throw new HttpError(429, 'rate_limited', 'Thao tác quá nhanh, thử lại sau ít giây');
   const clean = String(id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 24) || ('guest' + sec.randomToken(3));
   const p = upsert('demo-' + clean, true, Date.now());
@@ -155,12 +155,13 @@ function loginGuest(req, key, hint) {
   if (!env.GUEST_LOGIN) throw new HttpError(404, 'not_found', 'Không hỗ trợ');
   if (typeof key !== 'string' || !/^[A-Za-z0-9_-]{22,64}$/.test(key)) throw new HttpError(400, 'bad_key', 'Dữ liệu không hợp lệ');
   const ip = clientIp(req);
-  const rl = sec.rateLimit('auth:' + ip, 30, 60000);
+  const rl = sec.rateLimit('auth:' + ip, 120, 60000);
   if (!rl.ok) throw new HttpError(429, 'rate_limited', 'Thao tác quá nhanh, thử lại sau ít giây');
   const ext = 'KH' + sec.hmac(sec.subKey('guest-id'), key).slice(0, 10).toUpperCase();
   if (!getByExt(ext)) {
     // hạn chế tạo hàng loạt tài khoản từ 1 địa chỉ IP
-    const rc = sec.rateLimit('guestnew:' + ip, 20, 3600000);
+    // 4G và Wi-Fi văn phòng có rất nhiều người dùng chung 1 IP -> ngưỡng đủ rộng cho người thật, vẫn chặn tạo hàng loạt
+    const rc = sec.rateLimit('guestnew:' + ip, 300, 3600000);
     if (!rc.ok) throw new HttpError(429, 'rate_limited', 'Bạn tạo quá nhiều tài khoản, thử lại sau');
   }
   const p = upsert(ext, false, Date.now());

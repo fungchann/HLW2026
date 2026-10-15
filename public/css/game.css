@@ -34,12 +34,16 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; overflow: hidden; overflow-x: clip; background: var(--night-0); }
+html, body { margin: 0; height: 100%; overflow: hidden; overflow-x: clip; background: var(--night-0); overscroll-behavior: none; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+/* chặn chạm 2 lần để phóng to, menu chạm-giữ (iOS) và kéo ảnh trên mọi phần tử */
+html, body, button, a, .btn, .hole, .item, img, svg { touch-action: manipulation; -webkit-touch-callout: none; }
+img, svg { -webkit-user-drag: none; user-drag: none; }
 body {
   font-family: var(--font);
   color: var(--bone);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -601,13 +605,22 @@ button, input { font: inherit; }
   .home-main { flex-direction: row; flex-wrap: wrap; column-gap: 28px; row-gap: 8px; }
   .btn-xl { min-height: 54px; font-size: 1.3rem; }
   .app[data-screen="play"] .scr-play { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 18px; row-gap: 12px; align-items: start; }
-  .hud { grid-column: 1; grid-row: 1; width: 100%; flex-wrap: wrap; row-gap: 8px; }
-  .hud-mid { flex: 0 0 auto; }
+  .hud { grid-column: 1; grid-row: 1; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 6px; align-items: center; }
+  .hud-score { grid-column: 1; grid-row: 1; min-width: 0; }
+  .hud-mid { grid-column: 1; grid-row: 2; justify-content: flex-start; }
+  .hud-right { grid-column: 2; grid-row: 1 / span 2; flex-direction: column-reverse; align-items: center; gap: 6px; }
   .tierbar { grid-column: 1; grid-row: 2; width: 100%; }
   .tier-mark em { display: none; }
   .board-wrap { grid-column: 2; grid-row: 1 / span 3; height: 100%; }
   .combo { left: auto; right: calc(100% + 18px); top: 150px; transform: none; width: 200px; }
   .board { --size: min(calc(100vh - 20px), calc(100vw - 270px), 520px); }
+  .card { padding: 14px 18px; }
+  .pause-card { gap: 8px; }
+  .pause-score b { font-size: 2.2rem; }
+  .pause-award { padding: 6px 10px; font-size: .9rem; }
+  .pause-actions { gap: 8px; }
+  .pause-actions .btn { min-height: 44px; }
+  .pause-sound { top: 10px; right: 10px; width: 36px; height: 36px; }
   @supports (height: 100dvh) { .board { --size: min(calc(100dvh - 20px), calc(100vw - 270px), 520px); } }
 }
 
@@ -637,22 +650,29 @@ button, input { font: inherit; }
 .app.home-art .row-2 .btn { min-height: 0; height: 100%; font-size: clamp(1rem, 1.2cqw, 1.6rem); white-space: nowrap; padding-inline: .4em; }
 .app.home-art .camp-status { position: absolute; left: 50.9%; top: calc(52.2% - 3.4em); transform: translateX(-50%); width: max-content; max-width: 90vw; pointer-events: auto; }
 .app.home-art .camp-status.is-live { display: none; }
-/* Màn dọc (điện thoại): ảnh mobile 1080×1920 phủ kín (giữ tỉ lệ, cắt bớt mép nếu máy dài hơn 9:16).
-   3 nút nằm trong khoảng trống giữa tiêu đề và con cú/bảng 40% (khoảng 45%–61% chiều cao ảnh). */
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  .app.home-art .topbar { gap: 6px; }
+  .app.home-art .stat { min-width: 54px; padding: 2px 8px 3px; border-radius: 10px; }
+  .app.home-art .stat b { font-size: 1rem; }
+  .app.home-art .stat-k { font-size: .6rem; }
+  .app.home-art .topbar .icon-btn { width: 36px; height: 36px; }
+  .app.home-art .home-actions { left: 50.9%; transform: translateX(-50%); width: max(30%, 300px); grid-template-rows: max(10.3cqh, 42px) max(9cqh, 38px); }
+}
+/* Màn dọc (điện thoại): ảnh mobile 1080×1920 phủ kín, neo mép trên (màn dài -> cắt 2 bên; màn thấp -> cắt bớt đáy),
+   nên logo iNET + tiêu đề luôn nằm đủ dưới 4 ô thống kê. 3 nút nằm trong khoảng trống 44%–60% chiều cao ảnh. */
 @media (max-aspect-ratio: 1/1) {
-  .app.home-art .home-main { inset: auto; left: 50%; top: 50%; width: max(100vw, 56.25vh); height: max(100vh, 177.78vw); transform: translate(-50%, -50%); }
+  .app.home-art .home-main { inset: auto; left: 50%; top: 0; width: max(100vw, 56.25vh); height: max(100vh, 177.78vw); transform: translateX(-50%); }
   @supports (height: 100dvh) { .app.home-art .home-main { width: max(100vw, 56.25dvh); height: max(100dvh, 177.78vw); } }
-  .app.home-art .home-actions { left: 50%; top: 45.5%; transform: translateX(-50%); width: min(70cqw, 92vw, 460px); grid-template-rows: auto auto; gap: max(10px, 1.3cqh); }
-  .app.home-art .home-actions .btn-xl { height: auto; min-height: max(58px, 7cqh); font-size: clamp(1.35rem, 6cqw, 2rem); }
-  .app.home-art .row-2 { column-gap: 10px; }
-  .app.home-art .row-2 .btn { height: auto; min-height: max(50px, 5.6cqh); font-size: clamp(1rem, 4.2cqw, 1.3rem); }
-  .app.home-art .camp-status { top: calc(45.5% - 3.2em); }
+  .app.home-art .home-actions { left: 50%; top: 44.5%; transform: translateX(-50%); width: min(76cqw, 92vw, 460px); grid-template-rows: auto auto; gap: clamp(8px, 1.2cqh, 14px); }
+  .app.home-art .home-actions .btn-xl { height: clamp(46px, 6.6cqh, 66px); min-height: 0; font-size: clamp(1.15rem, 5.6cqw, 1.9rem); }
+  .app.home-art .row-2 { column-gap: clamp(6px, 2.4cqw, 12px); }
+  .app.home-art .row-2 .btn { height: clamp(40px, 5.2cqh, 56px); min-height: 0; font-size: clamp(.86rem, 3.9cqw, 1.25rem); padding-inline: .3em; }
+  .app.home-art .camp-status { top: calc(44.5% - 3.2em); }
   .app.home-art .topbar { justify-content: center; }
 }
-/* Máy tính bảng / khung gần vuông (rộng hơn 9:14): hiện trọn ảnh dọc, 2 bên lấp bằng chính ảnh làm mờ */
-@media (max-aspect-ratio: 1/1) and (min-aspect-ratio: 9/14) {
-  .app.home-art .home-main { width: min(100vw, 56.25vh); height: min(100vh, 177.78vw); box-shadow: 0 0 60px 24px rgba(10, 2, 0, .55); }
+/* Máy tính bảng dọc (rộng từ 600px, khung gần vuông): hiện trọn ảnh, 2 bên lấp bằng ảnh làm mờ */
+@media (max-aspect-ratio: 1/1) and (min-aspect-ratio: 9/14) and (min-width: 600px) {
+  .app.home-art .home-main { top: 50%; width: min(100vw, 56.25vh); height: min(100vh, 177.78vw); transform: translate(-50%, -50%); box-shadow: 0 0 60px 24px rgba(10, 2, 0, .55); }
   @supports (height: 100dvh) { .app.home-art .home-main { width: min(100vw, 56.25dvh); height: min(100dvh, 177.78vw); } }
-  .app.home-art .home-main { background-size: 100% 100%; }
   .app.home-art[data-screen="home"] .bg-img { inset: -40px; filter: blur(22px) brightness(.55); }
 }
