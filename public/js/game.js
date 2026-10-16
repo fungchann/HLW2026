@@ -38,7 +38,11 @@
   function rand(a, b) { return a + Math.random() * (b - a); }
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function setScreen(name) { app.dataset.screen = name; }
-  function restartClass(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  // Chạy lại hiệu ứng CSS mà KHÔNG ép trình duyệt tính lại bố cục ngay (void offsetWidth gây giật khi bấm nhanh)
+  function restartClass(el, cls) {
+    el.classList.remove(cls);
+    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add(cls); }); });
+  }
   var reduceMotion = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function track(type, extra) {
@@ -699,6 +703,7 @@
     G.pausedAt = null;
     G.state = 'playing';
     app.classList.add('is-playing');
+    holeRects = null;
     showHammerReady();
     clearInterval(G.syncTimer);
     G.syncTimer = setInterval(function () { sync(false); }, 3000);
@@ -809,10 +814,19 @@
   // búa luôn hiện trong lúc chơi (kể cả khi chơi bằng bàn phím); chuột rời bàn chơi thì búa đứng yên tại chỗ
   function showHammerReady() {
     if (hammer.classList.contains('mouse')) return;
-    var r = G.holes[4].el.getBoundingClientRect();
-    placeHammer(r.left + r.width * 0.62, r.top + r.height * 0.45);
+    var c = holeCenter(4);
+    placeHammer(c[0] + c[2] * 0.12, c[1] - c[3] * 0.05);
     hammer.classList.add('mouse');
   }
+
+  // Toạ độ tâm các ô được ghi nhớ sẵn (chỉ đo lại khi đổi cỡ màn hình) để mỗi lần bấm phím không phải đo bố cục
+  var holeRects = null;
+  function holeCenter(i) {
+    if (!holeRects) holeRects = G.holes.map(function (H) { var r = H.el.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width, r.height]; });
+    return holeRects[i];
+  }
+  window.addEventListener('resize', function () { holeRects = null; });
+  window.addEventListener('orientationchange', function () { holeRects = null; });
 
   function swingHammer(x, y, type) {
     if (type === 'mouse') {
@@ -837,9 +851,8 @@
         if (!e.isTrusted) { botDetected('synthetic'); return; }
         try { if (!document.hasFocus() && ++Bot.unfocused >= 3) { botDetected('unfocused'); return; } } catch (x) { /* bỏ qua */ }
         tapHole(KEYMAP[e.code], e.timeStamp);
-        var H = G.holes[KEYMAP[e.code]];
-        var r = H.el.getBoundingClientRect();
-        swingHammer(r.left + r.width / 2, r.top + r.height * 0.5, 'mouse');
+        var hc = holeCenter(KEYMAP[e.code]);
+        swingHammer(hc[0], hc[1], 'mouse');
       } else if (e.code === 'Escape' || e.code === 'Space' || e.code === 'KeyP') {
         e.preventDefault();
         pauseGame(false);
