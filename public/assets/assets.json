@@ -54,7 +54,7 @@
   "audio": {
     "bgmHome": "",
     "bgmGame": "",
-    "click": "",
+    "click": "/assets/audio/mouse-click.mp3",
     "hit": "",
     "kill": "",
     "miss": "",
