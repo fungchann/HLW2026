@@ -5,6 +5,7 @@
  */
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
 const env = require('./env');
 const db = require('./db');
 db.open(env.DB_PATH);
@@ -18,7 +19,7 @@ const tracking = require('./tracking');
 const admin = require('./admin');
 const sec = require('./security');
 const util = require('./util');
-const { HttpError, Router, readJson, json, baseHeaders, cspFor, serveFile, serveStatic, clientIp } = require('./http');
+const { HttpError, Router, readJson, json, baseHeaders, cspFor, serveFile, serveStatic, clientIp, isHttps } = require('./http');
 
 const PUBLIC = path.join(env.ROOT, 'public');
 const SHARED = path.join(env.ROOT, 'shared');
@@ -214,6 +215,19 @@ router.get('/healthz', (req, res) => json(res, 200, { ok: true, time: Date.now()
 
 admin.routes(router);
 
+// Trang game: điền tên miền thật vào thẻ chia sẻ (og:image phải là địa chỉ đầy đủ)
+function siteOrigin(req) {
+  if (env.PUBLIC_URL) return env.PUBLIC_URL;
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  if (!/^[a-z0-9.-]+(:[0-9]{1,5})?$/i.test(host)) return '';
+  return (isHttps(req) ? 'https://' : 'http://') + host;
+}
+function serveIndex(req, res) {
+  const html = fs.readFileSync(path.join(PUBLIC, 'index.html'), 'utf8').split('__ORIGIN__').join(siteOrigin(req));
+  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-cache', 'Content-Security-Policy': cspFor('game'), 'Content-Length': Buffer.byteLength(html) });
+  res.end(req.method === 'HEAD' ? undefined : html);
+}
+
 // ------------------------------------------------------------ phân phối request
 const server = http.createServer(async (req, res) => {
   baseHeaders(req, res);
@@ -234,7 +248,7 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method !== 'GET' && req.method !== 'HEAD') throw new HttpError(405, 'method_not_allowed', 'Phương thức không được hỗ trợ');
     if (pathname === '/' || pathname === '/index.html') {
-      if (serveFile(req, res, path.join(PUBLIC, 'index.html'), { csp: cspFor('game') })) return;
+      serveIndex(req, res); return;
     } else if (pathname === ADMIN_PREFIX.slice(0, -1)) {
       res.writeHead(301, { Location: ADMIN_PREFIX }); res.end(); return;
     } else if (pathname === ADMIN_PREFIX || pathname === ADMIN_PREFIX + 'index.html') {
