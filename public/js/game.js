@@ -842,7 +842,7 @@
   // đặt cán búa ngay vị trí con trỏ; búa to lên theo combo nên tính theo kích thước hiện tại
   function placeHammer(x, y) {
     var w = G.hammerW || hammerSizes()[0];
-    hammer.style.transform = 'translate(' + Math.round(x - w * 0.24) + 'px,' + Math.round(y - w * 0.89) + 'px)';
+    hammer.style.transform = 'translate(' + Math.round(x - w * 0.76) + 'px,' + Math.round(y - w * 0.89) + 'px)';
   }
   board.addEventListener('pointermove', function (e) {
     if (e.pointerType !== 'mouse') return;
@@ -853,7 +853,7 @@
   function showHammerReady() {
     if (hammer.classList.contains('mouse')) return;
     var c = holeCenter(4);
-    placeHammer(c[0] + c[2] * 0.12, c[1] - c[3] * 0.05);
+    placeHammer(c[0] - c[2] * 0.12, c[1] - c[3] * 0.05);
     hammer.classList.add('mouse');
   }
 
