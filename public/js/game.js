@@ -828,7 +828,12 @@
   board.addEventListener('pointerdown', function (e) {
     if (G.state !== 'playing') return;
     var holeEl = e.target.closest('.hole');
-    if (!holeEl) return;
+    if (!holeEl) {
+      var br = board.getBoundingClientRect();
+      var col = Math.floor((e.clientX - br.left) / br.width * 3), row = Math.floor((e.clientY - br.top) / br.height * 3);
+      if (col < 0 || col > 2 || row < 0 || row > 2) return;
+      holeEl = G.holes[row * 3 + col].el;
+    }
     e.preventDefault();
     if (!e.isTrusted) { botDetected('synthetic'); return; }
     checkTap(e);
@@ -844,8 +849,9 @@
     var w = G.hammerW || hammerSizes()[0];
     hammer.style.transform = 'translate(' + Math.round(x - w * 0.76) + 'px,' + Math.round(y - w * 0.89) + 'px)';
   }
-  board.addEventListener('pointermove', function (e) {
-    if (e.pointerType !== 'mouse') return;
+  // búa đi theo chuột trên TOÀN màn hình khi đang chơi (không chỉ trong bàn chơi)
+  document.addEventListener('pointermove', function (e) {
+    if (e.pointerType !== 'mouse' || G.state !== 'playing') return;
     hammer.classList.add('mouse');
     placeHammer(e.clientX, e.clientY);
   });

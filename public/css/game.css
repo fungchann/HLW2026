@@ -201,7 +201,7 @@ button, input { font: inherit; }
 
 /* ------------------------------------------------------------------ màn chơi */
 .scr-play { gap: 8px; align-items: center; }
-.hud { width: min(640px, 100%); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hud { width: min(880px, 100%); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .hud-score { display: flex; flex-direction: column; line-height: 1; min-width: 96px; }
 .hud-k { font-size: .75rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .hud-score b { font-size: clamp(2rem, 7vw, 2.8rem); font-weight: 800; color: var(--gold); -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); font-variant-numeric: tabular-nums; }
@@ -218,7 +218,7 @@ button, input { font: inherit; }
 .life.used { filter: grayscale(1) brightness(.6); transform: scale(.82) rotate(-12deg); }
 .life.warn { animation: shake-x 400ms linear 2; }
 
-.tierbar { width: min(640px, 100%); position: relative; height: 34px; }
+.tierbar { width: min(880px, 100%); position: relative; height: 34px; }
 .tier-track { position: absolute; left: 0; right: 0; top: 4px; height: 12px; border-radius: 999px; background: rgba(26, 5, 2, .8); border: 2px solid var(--ink); overflow: hidden; }
 .tier-fill { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); background: linear-gradient(90deg, var(--orange-d), var(--orange), var(--gold)); transition: transform 300ms var(--ease-out); }
 .tier-marks { position: absolute; inset: 0; }
@@ -235,14 +235,15 @@ button, input { font: inherit; }
 
 .board-wrap { position: relative; flex: 1; width: 100%; display: grid; place-items: center; min-height: 0; }
 .board {
-  --size: min(94vw, calc(100vh - 186px - var(--safe-t) - var(--safe-b)), 620px);
+  --size: min(94vw, calc(100vh - 150px - var(--safe-t) - var(--safe-b)), 860px);
   width: var(--size); height: var(--size);
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr));
   gap: calc(var(--size) * .02);
   touch-action: none; position: relative;
 }
-@supports (height: 100dvh) { .board { --size: min(94vw, calc(100dvh - 186px - var(--safe-t) - var(--safe-b)), 620px); } }
-@media (pointer: fine) { .app.is-playing .board, .app.is-playing .board * { cursor: none; } }
+@supports (height: 100dvh) { .board { --size: min(94vw, calc(100dvh - 150px - var(--safe-t) - var(--safe-b)), 860px); } }
+/* búa thay con trỏ trên toàn màn chơi (chỉ hiện con trỏ khi rê vào nút) */
+@media (pointer: fine) { .app.is-playing .scr-play, .app.is-playing .scr-play * { cursor: none; } .app.is-playing .scr-play button, .app.is-playing .scr-play button * { cursor: pointer; } }
 
 .hole { position: relative; contain: layout style; }
 .hole:nth-child(n+4) { z-index: 2; }
