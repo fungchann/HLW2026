@@ -313,10 +313,10 @@ async function playSession(token, targetScore, opts) {
     assert.strictEqual(first.fin.status, 200, JSON.stringify(first.fin.data));
     const res = first.fin.data.result;
     assert.strictEqual(res.score, first.bot.score);
-    assert.ok(res.score >= 260 && res.score < 450, 'score ' + res.score);
+    assert.ok(res.score >= 260 && res.score < 500, 'score ' + res.score);
     assert.strictEqual(res.award.status, 'issued');
     assert.strictEqual(res.award.tier.id, 'email');
-    assert.ok(res.next && res.next.id === 'cloud' && res.next.need === 450 - res.score);
+    assert.ok(res.next && res.next.id === 'cloud' && res.next.need === 500 - res.score);
   });
 
   let couponId, code;
