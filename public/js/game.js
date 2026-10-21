@@ -188,6 +188,30 @@
     track(Sound.enabled ? 'sound_on' : 'sound_off');
   }
   $('btn-sound').addEventListener('click', toggleSound);
+
+  // Toàn màn hình (máy tính, Android, iPad). iPhone Safari không hỗ trợ toàn màn hình cho trang web -> ẩn nút.
+  // Khi nhúng trong Portal, thẻ iframe cần có allow="fullscreen" thì nút mới hoạt động.
+  (function setupFullscreen() {
+    var de = document.documentElement, btn = $('btn-fs');
+    var req = de.requestFullscreen || de.webkitRequestFullscreen;
+    var enabled = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+    if (!btn || !req || !enabled) return;
+    function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+    function paint() {
+      btn.innerHTML = Art.ui(isFs() ? 'exitFullscreen' : 'fullscreen');
+      btn.setAttribute('aria-label', isFs() ? 'Thoát toàn màn hình' : 'Toàn màn hình');
+      btn.title = btn.getAttribute('aria-label');
+    }
+    btn.hidden = false;
+    paint();
+    btn.addEventListener('click', function () {
+      Sound.unlock(); Sound.play('click');
+      if (isFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      try { var p = req.call(de); if (p && p.catch) p.catch(function () { toast('Trình duyệt không cho phép toàn màn hình ở đây', null, 'bad'); }); } catch (e) { toast('Trình duyệt không cho phép toàn màn hình ở đây', null, 'bad'); }
+    });
+    document.addEventListener('fullscreenchange', paint);
+    document.addEventListener('webkitfullscreenchange', paint);
+  })();
   $('btn-sound2').addEventListener('click', toggleSound);
   // trình duyệt chỉ cho phát âm thanh sau thao tác đầu tiên của người dùng
   document.addEventListener('pointerdown', function first() {

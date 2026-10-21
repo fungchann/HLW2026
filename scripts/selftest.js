@@ -527,6 +527,20 @@ async function playSession(token, targetScore, opts) {
     for (const c of db.all('SELECT tier_id, discount FROM coupons')) assert.strictEqual(c.discount, cfgTiers.find((t) => t.id === c.tier_id).discount);
   });
 
+  await step('Nhúng Portal: trang game cho phép portal.inet.vn nhúng (iframe); trang quản trị KHÔNG cho ai nhúng', async () => {
+    const g = await api('GET', '/');
+    const csp = g.headers.get('content-security-policy');
+    assert.ok(/frame-ancestors[^;]*https:\/\/portal\.inet\.vn/.test(csp), csp);
+    assert.ok(!g.headers.get('x-frame-options'), 'game không được gửi X-Frame-Options');
+    const a = await api('GET', '/hlw-admin-quantri128/');
+    assert.ok(/frame-ancestors 'none'/.test(a.headers.get('content-security-policy')));
+    assert.strictEqual(a.headers.get('x-frame-options'), 'DENY');
+    // tham số userId trên URL không có tác dụng (chỉ nhận token Portal có chữ ký)
+    const h = await api('GET', '/?userId=KH999&token=gia-mao');
+    assert.strictEqual(h.status, 200);
+    assert.strictEqual((await api('POST', '/api/auth/portal', { token: 'gia-mao' })).status, 401);
+  });
+
   let cookie, csrf;
   await step('Admin: sai mật khẩu bị từ chối; đăng nhập đúng -> bắt đổi mật khẩu lần đầu', async () => {
     assert.strictEqual((await api('POST', '/api/admin/login', { username: 'boss', password: 'sai' })).status, 401);

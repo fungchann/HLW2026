@@ -63,7 +63,8 @@ const config = {
   PORTAL_JWT_SECRET: pick('PORTAL_JWT_SECRET'),
   PORTAL_JWT_AUDIENCE: E.PORTAL_JWT_AUDIENCE || '',
   PORTAL_TOKEN_MAX_TTL: parseInt(E.PORTAL_TOKEN_MAX_TTL || '86400', 10),
-  PORTAL_ORIGINS: list(E.PORTAL_ORIGINS || (isProd ? '' : 'http://localhost:*')),
+  // Trang được phép nhúng game bằng iframe (Portal iNET). Ghi đè bằng biến PORTAL_ORIGINS nếu cần.
+  PORTAL_ORIGINS: list(E.PORTAL_ORIGINS || ('https://portal.inet.vn https://*.inet.vn' + (isProd ? '' : ' http://localhost:*'))),
   INTEGRATION_SECRET: pick('INTEGRATION_SECRET'),
   COUPON_ENC_KEY: E.COUPON_ENC_KEY || '',
 
