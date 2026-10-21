@@ -207,6 +207,9 @@ button, input { font: inherit; }
 .hud-score b { font-size: clamp(2rem, 7vw, 2.8rem); font-weight: 800; color: var(--gold); -webkit-text-stroke: 5px var(--ink); paint-order: stroke fill; text-shadow: 0 3px 0 var(--ink); font-variant-numeric: tabular-nums; }
 .hud-score b.bump { animation: bump 260ms var(--ease-back); }
 .hud-mid { flex: 1; display: flex; justify-content: center; }
+.hud-mid { gap: 8px; align-items: center; }
+.g-time { padding: 3px 10px; border-radius: 999px; background: rgba(26, 5, 2, .75); border: 2px solid var(--ink); font-weight: 800; font-size: .95rem; color: var(--bone); font-variant-numeric: tabular-nums; box-shadow: 0 3px 0 var(--ink); }
+.g-time.low { background: #c9221a; color: #fff; animation: bump 1s ease-in-out infinite; }
 .lv { padding: 3px 12px; border-radius: 999px; background: var(--plum); border: 2px solid var(--ink); font-weight: 800; font-size: .95rem; box-shadow: 0 3px 0 var(--ink); }
 .hud-right { display: flex; align-items: center; gap: 10px; }
 .lives { display: flex; gap: 4px; }

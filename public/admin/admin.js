@@ -37,7 +37,7 @@
   function debounce(fn, ms) { var t; return function () { var a = arguments, self = this; clearTimeout(t); t = setTimeout(function () { fn.apply(self, a); }, ms); }; }
 
   var DEVICE = { mobile: 'Điện thoại', desktop: 'Máy tính', tablet: 'Máy tính bảng' };
-  var REASON = { bomb: 'Trúng bom', quit: 'Chủ động kết thúc', idle: 'Không thao tác (tự kết thúc)', timeout: 'Bỏ dở (quá thời gian chờ)', replaced: 'Bỏ dở (mở lượt mới)', invalid: 'Gian lận / không hợp lệ' };
+  var REASON = { bomb: 'Trúng bom', quit: 'Chủ động kết thúc', idle: 'Không thao tác (tự kết thúc)', time: 'Hết thời gian lượt chơi', timeout: 'Bỏ dở (quá thời gian chờ)', replaced: 'Bỏ dở (mở lượt mới)', invalid: 'Gian lận / không hợp lệ' };
   var AWARD = { issued: 'Đã cấp', pending: 'Đang tạo mã', held: 'Chờ duyệt', owned: 'Đã sở hữu', sold_out: 'Hết hạn mức', none: 'Không đạt', invalid: 'Không hợp lệ', revoked: 'Đã thu hồi' };
   var CSTATUS = { pending: 'Đang tạo mã', issued: 'Hiệu lực', held: 'Chờ duyệt', redeemed: 'Đã dùng', revoked: 'Đã thu hồi', active: 'Hiệu lực', expired: 'Hết hạn' };
   var FLAG = { slow_clock: 'Đồng hồ chậm bất thường', fast_reaction: 'Phản xạ quá nhanh', tap_rate: 'Tốc độ đập bất thường', too_precise: 'Chính xác bất thường',
@@ -548,7 +548,7 @@
     }, { head: ['Khoảng điểm', 'Số lượt'], rows: bins.map(function (b) { return [b.label, fmtNum(b.value)]; }) });
 
     // --- lý do kết thúc
-    var reasonOrder = ['bomb', 'quit', 'idle', 'timeout', 'replaced', 'invalid'];
+    var reasonOrder = ['bomb', 'time', 'quit', 'idle', 'timeout', 'replaced', 'invalid'];
     var reasons = reasonOrder.map(function (r, i) { var x = d.endReasons.find(function (e) { return e.reason === r; }); return { label: REASON[r], value: x ? x.n : 0, slot: i + 1 }; });
     drawChart('reasons', function (box) { Charts.stack(box, { segments: reasons }); },
       { head: ['Lý do', 'Số lượt'], rows: reasons.map(function (r) { return [r.label, fmtNum(r.value)]; }) });
@@ -974,7 +974,7 @@
       inp('campaign.testMode', 'Chế độ test: cho phép chơi ngoài thời gian chương trình', 'bool', { wide: true, hint: 'dữ liệu chơi ngoài thời gian được gắn cờ test' }) +
       inp('campaign.maintenance', 'Tạm khoá game (bảo trì)', 'bool', { wide: true }) + inp('campaign.maintenanceMessage', 'Thông báo bảo trì', 'str', { wide: true }) + '</div>');
     html += section('turns', 'Lượt chơi', 'Lượt và quyền nhận coupon chỉ được tính ở máy chủ', '<div class="form-grid">' +
-      inp('turns.max', 'Số lượt tối đa', 'int', { min: 1, max: 50 }) + inp('turns.regenMinutes', 'Thời gian hồi 1 lượt (phút)', 'num', { min: 0.5 }) +
+      inp('turns.max', 'Số lượt tối đa', 'int', { min: 1, max: 50 }) + inp('turns.regenMinutes', 'Thời gian hồi 1 lượt (phút)', 'num', { min: 0.5 }) + inp('turns.maxSeconds', 'Thời gian tối đa mỗi lượt (giây)', 'int', { min: 0, max: 3600, hint: '300 = 5 phút; 0 = không giới hạn' }) +
       inp('bombs.strikes', 'Số lần trúng bom thì thua', 'int', { min: 1, max: 10 }) + '</div>');
     html += section('bombs', 'Bom hoá trang', 'Bom đội mũ để người chơi dễ nhầm với bí. Level tính theo "Mỗi level kéo dài" ở mục Độ khó.', '<div class="form-grid">' +
       inp('bombs.disguiseLevel', 'Từ level xuất hiện bom đội nón vải / nón sắt', 'int', { min: 1, max: 99 }) +

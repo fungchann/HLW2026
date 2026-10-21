@@ -202,6 +202,44 @@ async function playSession(token, targetScore, opts) {
     });
   });
 
+  await step('Giới hạn 5 phút: chơi chậm mà chắc cũng tự kết thúc đúng lúc hết giờ; máy chủ ghi lý do "hết thời gian"', async () => {
+    const cfg = settings.gameConfig(settings.defaults());
+    assert.strictEqual(cfg.rules.maxMs, 300000);
+    const g = new Engine.Game(7, cfg); g.spawner.generateUntil(400000);
+    let next = 1000;
+    for (const x of g.spawner.spawns) { if (x.type === 'bomb' || x.at < next) continue; let t = x.at + 400; for (let k = 0; k < x.hp; k++) { g.tap(t, x.hole); t += 300; } next = t + 3000; if (g.over()) break; }
+    const sum = g.summary(400000);
+    assert.strictEqual(sum.timeUp, true); assert.strictEqual(sum.endT, 300000); assert.strictEqual(sum.dead, false);
+    assert.strictEqual(g.tap(300500, 0).kind, 'ignored');
+    // qua máy chủ
+    const tk = (await api('POST', '/api/auth/guest', { key: sec.randomToken(24) })).data.accessToken;
+    const st = await api('POST', '/api/game/start', { engine: Engine.VERSION }, { token: tk });
+    const ev = [];
+    next = 1000;
+    const g2 = new Engine.Game(st.data.seed, st.data.cfg); g2.spawner.generateUntil(400000);
+    let lastTap = 0;
+    const keepAlive = (until) => { // chạm ô trống mỗi 8 giây để không bị luật 10 giây kết thúc
+      while (until - lastTap > 8000) { const t = lastTap + 8000; let h = 0; while (h < 9 && g2.spawnAt(h, t)) h++; ev.push([t, h % 9]); g2.tap(t, h % 9); lastTap = t; }
+    };
+    for (const x of g2.spawner.spawns) {
+      if (x.type === 'bomb' || x.at < next) continue;
+      let t = x.at + 400;
+      keepAlive(t);
+      if (g2.over()) break;
+      for (let k = 0; k < x.hp; k++) { ev.push([t, x.hole]); g2.tap(t, x.hole); lastTap = t; t += 300; }
+      next = t + 1500; if (g2.over()) break;
+    }
+    assert.strictEqual(g2.timeUp, true, 'bot thử phải chơi tới hết giờ');
+    backdate(st.data.sessionId, 305000);
+    let base = 0, last = 0;
+    for (let i = 0; i < ev.length; i++) if (ev[i][0] - last >= 3000) { const r = await api('POST', '/api/game/sync', { sid: st.data.sessionId, base, ev: ev.slice(base, i), gt: ev[i][0] }, { token: tk }); if (r.data.ended) break; base = i; last = ev[i][0]; }
+    const fin = await api('POST', '/api/game/finish', { sid: st.data.sessionId, base, ev: ev.slice(base).filter((e) => e[0] < 300000), gt: 300000, reason: 'quit' }, { token: tk });
+    assert.strictEqual(fin.data.result.endReason, 'time', JSON.stringify(fin.data.result).slice(0, 200));
+    assert.ok(fin.data.result.durationMs <= 300000);
+    // dọn dữ liệu của bài này để các bài đếm coupon phía sau không bị lệch
+    db.run('DELETE FROM coupons WHERE session_id = ?', st.data.sessionId);
+  });
+
   await step('Engine v2: 10 giây không thao tác -> tự kết thúc lượt', () => {
     const cfg = settings.gameConfig(settings.defaults());
     const g = new Engine.Game(5, cfg);

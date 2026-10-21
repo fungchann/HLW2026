@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 5;
+  var VERSION = 6;
   var HOLES = 9;
 
   // Mốc thời gian hiển thị (ms). rise/sink chỉ là hiệu ứng; ko = thời gian vật phẩm
@@ -318,6 +318,8 @@
     this.lastAct = 0;     // lần thao tác gần nhất (tính cả đập trượt)
     this.idle = false;
     this.idleAt = -1;
+    this.maxMs = cfg.rules && cfg.rules.maxMs > 0 ? cfg.rules.maxMs : 0;
+    this.timeUp = false;
   }
 
   Game.prototype.endOf = function (s) {
@@ -327,8 +329,14 @@
 
   // Tự kết thúc khi người chơi không thao tác quá idleMs (tính theo thời gian game).
   Game.prototype.checkIdle = function (t) {
-    if (this.dead || this.idle || !this.idleMs) return this.idle;
-    if (t - this.lastAct > this.idleMs) { this.idle = true; this.idleAt = this.lastAct + this.idleMs; }
+    if (this.dead || this.idle) return this.idle;
+    // hết thời gian lượt chơi: kết thúc đúng tại mốc maxMs (dùng chung cơ chế với "không thao tác")
+    if (this.maxMs && t >= this.maxMs) { this.idle = true; this.timeUp = true; this.idleAt = this.maxMs; return true; }
+    if (!this.idleMs) return false;
+    if (t - this.lastAct > this.idleMs) {
+      this.idle = true; this.idleAt = this.lastAct + this.idleMs;
+      if (this.maxMs && this.idleAt > this.maxMs) { this.idleAt = this.maxMs; this.timeUp = true; }
+    }
     return this.idle;
   };
   Game.prototype.over = function () { return this.dead || this.idle; };
@@ -441,6 +449,7 @@
       strikes: this.strikes,
       dead: this.dead,
       idle: this.idle,
+      timeUp: this.timeUp,
       endT: end,
       level: difficultyAt(this.cfg, end).level,
       itemsShown: shown,

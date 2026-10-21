@@ -232,7 +232,7 @@ function sync(p, body) {
     const result = finalize(ctx.row.id, 'invalid');
     return { ended: true, result };
   }
-  if (ctx.game.idle) return { ended: true, result: finalize(ctx.row.id, 'idle') };
+  if (ctx.game.idle) return { ended: true, result: finalize(ctx.row.id, ctx.game.timeUp ? 'time' : 'idle') };
   const g = ctx.game;
   return { ok: true, acked: ctx.events.length, score: g.score, combo: g.combo, strikes: g.strikes, dead: g.dead };
 }
@@ -260,7 +260,7 @@ function activeFor(p) {
   if (!row) return null;
   const ctx = loadCtx(row.id);
   if (!ctx || ctx.ended) return null;
-  if (ctx.game.over()) { finalize(row.id, ctx.game.idle ? 'idle' : 'quit'); return null; }
+  if (ctx.game.over()) { finalize(row.id, ctx.game.timeUp ? 'time' : (ctx.game.idle ? 'idle' : 'quit')); return null; }
   return {
     sessionId: ctx.row.id,
     seed: ctx.row.seed,
@@ -296,7 +296,7 @@ function analyze(ctx, sum, s) {
 }
 
 // ------------------------------------------------------------ kết thúc lượt
-const REASON_TEXT = { bomb: 'Trúng bom', quit: 'Chủ động kết thúc', idle: 'Không thao tác (tự kết thúc)', timeout: 'Bỏ dở (quá thời gian)', replaced: 'Bỏ dở (mở lượt mới)', invalid: 'Gian lận / không hợp lệ' };
+const REASON_TEXT = { bomb: 'Trúng bom', quit: 'Chủ động kết thúc', idle: 'Không thao tác (tự kết thúc)', time: 'Hết thời gian lượt chơi', timeout: 'Bỏ dở (quá thời gian)', replaced: 'Bỏ dở (mở lượt mới)', invalid: 'Gian lận / không hợp lệ' };
 
 function finalize(sid, reason) {
   const ctx = loadCtx(sid);
@@ -315,6 +315,7 @@ function finalize(sid, reason) {
   let endReason, status;
   if (invalid) { endReason = 'invalid'; status = 'invalid'; }
   else if (sum.dead) { endReason = 'bomb'; status = 'finished'; }
+  else if (sum.timeUp) { endReason = 'time'; status = 'finished'; }
   else if (sum.idle) { endReason = 'idle'; status = 'finished'; }
   else if (reason === 'quit') { endReason = 'quit'; status = 'finished'; }
   else { endReason = reason; status = 'abandoned'; }

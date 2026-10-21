@@ -440,6 +440,7 @@
   }
 
   function setupGame(data, resume) {
+    var tm = $('g-time'); tm.hidden = true; tm.removeAttribute('data-s'); tm.classList.remove('low');
     G.sid = data.sessionId;
     G.lastSid = data.sessionId;
     G.cfg = data.cfg;
@@ -603,6 +604,19 @@
       G.comboShown = 0;
     }
     if (G.hammerSkin && !G.game.isComboAlive(t)) setHammerSkin(0);
+    // đồng hồ đếm ngược thời gian lượt chơi
+    if (G.game.maxMs) {
+      var remain = G.game.maxMs - t;
+      if (remain <= 0) { onIdleEnd(G.game.maxMs); return; }
+      var rs = Math.ceil(remain / 1000), te = $('g-time');
+      if (te.getAttribute('data-s') !== String(rs)) {
+        te.setAttribute('data-s', rs);
+        te.hidden = false;
+        te.textContent = Math.floor(rs / 60) + ':' + ('0' + (rs % 60)).slice(-2);
+        te.classList.toggle('low', rs <= 10);
+        if (rs <= 10) Sound.play('count');
+      }
+    }
     if (G.game.idleMs) {
       var left = G.game.idleMs - (t - G.game.lastAct);
       var idleEl = $('g-idle');
@@ -1209,11 +1223,13 @@
     G.state = 'ending';
     stopLoop();
     $('g-idle').hidden = true;
-    banner('HẾT GIỜ CHỜ', 'Bạn không thao tác trong ' + Math.round(G.game.idleMs / 1000) + ' giây', true);
+    var timeUp = G.game.maxMs && t >= G.game.maxMs - 50;
+    if (timeUp) banner('HẾT GIỜ!', 'Lượt chơi đã đủ ' + Math.round(G.game.maxMs / 60000) + ' phút', true);
+    else banner('HẾT GIỜ CHỜ', 'Bạn không thao tác trong ' + Math.round(G.game.idleMs / 1000) + ' giây', true);
     var gt = Math.max(t, gameNow());
     finishToServer('quit', gt).then(function (res) {
       G.state = 'ended';
-      showResult(res, 'idle');
+      showResult(res, timeUp ? 'time' : 'idle');
     }).catch(function (e) {
       G.state = 'ended';
       if (e.status === 401) authLost(e); else showMessage({ title: 'Chưa gửi được kết quả', text: e.message, mood: 'sad', actions: [{ label: 'Về trang chủ', onClick: goHome }] });
@@ -1369,6 +1385,7 @@
     h += '<h2 class="res-title" id="res-title">' + esc(cheat ? 'Phát hiện chơi hộ / gian lận!' : (res.message || (won ? 'Chúc mừng bạn!' : 'Cố lên nhé!'))) + '</h2>';
     h += '<div class="res-score"><span>Điểm</span><b>' + fmtNum(res.score) + '</b>' + (res.newBest ? '<em class="badge-best">Kỷ lục mới!</em>' : '') + '</div>';
     h += '<div class="res-stats"><span>Combo x' + res.maxCombo + '</span><span>Level ' + res.level + '</span><span>' + fmtDur(res.durationMs) + '</span></div>';
+    if (res.endReason === 'time') h += '<p class="res-note">Hết thời gian lượt chơi (' + Math.round(((G.cfg && G.cfg.rules && G.cfg.rules.maxMs) || 300000) / 60000) + ' phút). Điểm được tính đến lúc hết giờ.</p>';
     if (res.endReason === 'idle') h += '<p class="res-note">Lượt chơi tự kết thúc vì bạn không thao tác trong ' + Math.round(((G.cfg && G.cfg.rules && G.cfg.rules.idleMs) || 10000) / 1000) + ' giây.</p>';
     if (aw.status === 'invalid') {
       h += '<div class="res-block"><b>Lượt chơi đã bị huỷ</b>Hệ thống phát hiện thao tác bất thường (công cụ tự động, trợ lý AI chơi hộ, tiện ích điều khiển trình duyệt, can thiệp dữ liệu hoặc tốc độ không phải của người chơi). Kết quả không được ghi nhận và không được nhận voucher.' +
@@ -1470,6 +1487,7 @@
       '<section><h3>3. Thể lệ nhận voucher</h3><table class="tier-table"><tbody>' + tierRows + '</tbody></table></section>' +
       '<section><h3>4. Lưu ý</h3><ul>' +
       '<li>Chương trình diễn ra từ ' + esc(c.periodText || (fmtDate(c.start) + ' – ' + fmtDate(c.end))) + '.</li>' +
+      (g.maxSeconds ? '<li>Mỗi lượt chơi tối đa ' + (g.maxSeconds % 60 ? g.maxSeconds + ' giây' : (g.maxSeconds / 60) + ' phút') + '.</li>' : '') +
       (g.idleSeconds ? '<li>Không thao tác trong ' + g.idleSeconds + ' giây khi đang chơi sẽ tự kết thúc lượt.</li>' : '') +
       '<li>Mỗi voucher dùng 1 lần, hạn dùng đến ' + fmtTime(g.couponExpiresAt) + ' ngày ' + fmtDate(g.couponExpiresAt) + '.</li></ul></section>';
     $('guide-body').innerHTML = html;

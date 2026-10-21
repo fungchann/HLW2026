@@ -61,7 +61,8 @@ function guideInfo(s) {
     features: s.features,
     gameOver: s.messages.gameOver,
     boss: s.boss,
-    idleSeconds: s.antiCheat.idleSeconds
+    idleSeconds: s.antiCheat.idleSeconds,
+    maxSeconds: s.turns.maxSeconds
   };
 }
 

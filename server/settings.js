@@ -57,7 +57,7 @@ function defaults() {
       portalUrl: 'https://portal.inet.vn',
       periodText: '26/10 – 31/10/2026'
     },
-    turns: { max: 3, regenMinutes: 10 },
+    turns: { max: 3, regenMinutes: 10, maxSeconds: 300 }, // maxSeconds: thời gian tối đa mỗi lượt (0 = không giới hạn)
     combo: { windowMs: 1500, bonus: [0, 0, 2, 3, 4, 5], hammer: [3, 5, 8], hammerBonus: [50, 100, 150] },
     bombs: { strikes: 2, disguiseLevel: 3, disguiseLevel2: 5, disguisePct: 40 },
     boss: { enabled: true, firstLevel: 4, everyLevels: 3 },
@@ -198,7 +198,7 @@ function sanitize(input) {
   if (Date.parse(out.campaign.end) <= Date.parse(out.campaign.start)) errors.push('Thời gian kết thúc phải sau thời gian bắt đầu.');
 
   const tu = src.turns || {};
-  out.turns = { max: int(tu.max, 1, 50, D.turns.max), regenMinutes: num(tu.regenMinutes, 0.5, 1440, D.turns.regenMinutes) };
+  out.turns = { max: int(tu.max, 1, 50, D.turns.max), regenMinutes: num(tu.regenMinutes, 0.5, 1440, D.turns.regenMinutes), maxSeconds: int(tu.maxSeconds, 0, 3600, D.turns.maxSeconds) };
 
   const co = src.combo || {};
   let bonus = Array.isArray(co.bonus) ? co.bonus.slice(0, 20).map((x) => int(x, 0, 1000, 0)) : D.combo.bonus;
@@ -458,7 +458,7 @@ function gameConfig(s) {
     combo: s.combo,
     bombs: s.bombs,
     boss: s.boss,
-    rules: { idleMs: s.antiCheat.idleSeconds > 0 ? s.antiCheat.idleSeconds * 1000 : 0 }
+    rules: { idleMs: s.antiCheat.idleSeconds > 0 ? s.antiCheat.idleSeconds * 1000 : 0, maxMs: s.turns.maxSeconds > 0 ? s.turns.maxSeconds * 1000 : 0 }
   };
 }
 
