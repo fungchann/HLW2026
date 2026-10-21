@@ -18,7 +18,7 @@
 }(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  var VERSION = 6;
+  var VERSION = 7;
   var HOLES = 9;
 
   // Mốc thời gian hiển thị (ms). rise/sink chỉ là hiệu ứng; ko = thời gian vật phẩm
@@ -122,6 +122,8 @@
     this.bossIndex = 0;
     var R0 = rules(cfg);
     this.rushAt = R0.rushEvery > 0 ? R0.rushFirst : -1;
+    this.lastGood = 0;            // lần gần nhất có vật phẩm đập được (không tính bom) trồi lên
+    this.streakEnd = 0;           // hết "đợt dồn" -> 1 nhịp nghỉ ngắn rồi sang đợt mới
   }
 
   var RUSH_DUR_FACTOR = 135;
@@ -135,6 +137,9 @@
       disguise1: Math.max(1, bo.disguiseLevel | 0 || 3),
       disguise2: Math.max(1, bo.disguiseLevel2 | 0 || 5),
       disguisePct: clamp(bo.disguisePct | 0, 0, 100),
+      // Nhịp xuất hiện: không để quá "gap" ms không có vật phẩm (giữ được combo); xen kẽ nhịp nghỉ ngắn "breath" ms
+      gap: clamp(Math.round(Math.max(300, cfg.combo && cfg.combo.windowMs | 0 || 1500) * 0.75), 500, 1500),
+      breath: clamp(Math.round(Math.max(300, cfg.combo && cfg.combo.windowMs | 0 || 1500) * 0.87), 600, 1800),
       // "Tràn đồng": thỉnh thoảng cả 9 ô cùng trồi lên
       rushFirst: Math.max(1000, (d.rushFirstSeconds | 0) * 1000),
       rushEvery: Math.max(0, (d.rushEverySeconds | 0) * 1000),
@@ -176,13 +181,17 @@
     for (i = 0; i < live.length; i++) if (live[i] > t) live[n++] = live[i];
     live.length = n;
 
-    // Đợt tràn đồng: chờ các ô trống hết rồi cho cả 9 ô cùng trồi lên
+    // Đợt tràn đồng: tung vật phẩm ra MỌI ô đang trống (cần ít nhất 6 ô). Chưa đủ ô thì hoãn đợt tràn
+    // đồng 1,5 giây và vẫn sinh vật phẩm bình thường -> không bao giờ để bàn chơi đứng chờ.
     if (this.rushAt >= 0 && t >= this.rushAt) {
-      var allFree = 0;
-      for (i = 0; i < HOLES; i++) if (this.holeFreeAt[i] > allFree) allFree = this.holeFreeAt[i];
-      if (allFree > t) { this.nextAt = allFree; return; }
+      var rushHoles = [];
+      for (i = 0; i < HOLES; i++) if (this.holeFreeAt[i] <= t) rushHoles.push(i);
+      if (rushHoles.length < 6) this.rushAt = t + 1500;
+    }
+    if (this.rushAt >= 0 && t >= this.rushAt) {
       var bombs = 0;
-      for (var rh = 0; rh < HOLES; rh++) {
+      for (var ri = 0; ri < rushHoles.length; ri++) {
+        var rh = rushHoles[ri];
         var rt = this._pickType(D), tries = 0;
         while (rt === 'bomb' && bombs >= R.rushBombMax && tries++ < 6) rt = this._pickType(D);
         if (rt === 'bomb' && bombs >= R.rushBombMax) rt = 'pumpkin';
@@ -202,17 +211,20 @@
         this.byHole[rh].push(rs);
         this.holeFreeAt[rh] = t + rdur + (rhp - 1) * R.hold + TIMING.ko + TIMING.holeRest;
         live.push(t + rdur);
+        if (rt !== 'bomb') this.lastGood = t;
       }
       var rj = Math.round(R.rushEvery * 15 / 100);
       this.rushAt = t + R.rushEvery - rj + r.int(2 * rj + 1);
-      this.nextAt = t + rdur + 200;
+      this.nextAt = t + Math.min(rdur + 200, R.gap);
       return;
     }
 
-    if (n >= D.maxActive) {
+    // quá lâu không có vật phẩm đập được -> ra ngay (kể cả khi đã đủ số vật phẩm tối đa trên bàn)
+    var overdue = t - this.lastGood >= R.gap;
+    if (n >= D.maxActive && !overdue) {
       var minEnd = live[0];
       for (i = 1; i < n; i++) if (live[i] < minEnd) minEnd = live[i];
-      this.nextAt = minEnd + 60 + r.int(160);
+      this.nextAt = Math.max(t + 1, Math.min(minEnd + 60 + r.int(160), this.lastGood + R.gap));
       return;
     }
 
@@ -230,7 +242,7 @@
     // Nhiều vật phẩm cùng lúc: xác suất & số lượng tăng dần theo độ khó
     var group = 1;
     if (r.int(100) < D.burstPct) group = 2 + r.int(Math.max(1, D.burstMax - 1));
-    group = Math.max(1, Math.min(group, D.maxActive - n, free.length));
+    group = Math.max(1, Math.min(group, Math.max(1, D.maxActive - n), free.length));
 
     for (var g = 0; g < group; g++) {
       var idx = r.int(free.length);
@@ -243,6 +255,9 @@
         this.bossIndex++;
       }
       if (!type) type = this._pickType(D);
+      // đang "đói" vật phẩm: con đầu tiên của nhóm không được là bom
+      for (var rp = 0; g === 0 && overdue && type === 'bomb' && rp < 4; rp++) type = this._pickType(D);
+      if (g === 0 && overdue && type === 'bomb') type = 'pumpkin';
       if (type === 'bomb' && D.level >= R.disguise1 && r.int(100) < R.disguisePct) {
         var skins = D.level >= R.disguise2 ? BOMB_SKINS_L2 : BOMB_SKINS_L1;
         skin = skins[r.int(skins.length)];
@@ -262,10 +277,18 @@
       live.push(t + dur);
       n++;
       this.lastHole = hole;
+      if (type !== 'bomb') this.lastGood = t;
     }
 
     var jit = Math.round(D.interval * clamp(cfg.difficulty.jitterPct | 0, 0, 60) / 100);
     var next = t + D.interval - jit + r.int(2 * jit + 1);
+    // Nhịp: dồn liên tục 6–10 giây (khoảng cách tối đa R.gap), rồi 1 nhịp nghỉ ngắn R.breath
+    var limit = R.gap;
+    if (t >= this.streakEnd) {
+      if (this.streakEnd > 0) limit = R.breath;
+      this.streakEnd = t + 6000 + r.int(4001);
+    }
+    if (next > t + limit) next = t + limit;
     this.nextAt = next > t ? next : t + 1;
   };
 

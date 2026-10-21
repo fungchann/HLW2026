@@ -196,8 +196,8 @@ async function playSession(token, targetScore, opts) {
     assert.ok(list.length >= 3, 'có ít nhất 3 đợt tràn đồng trong 2 phút: ' + list.length);
     assert.ok(list[0][0].at <= 12000, 'đợt đầu sớm');
     list.forEach((w) => {
-      assert.strictEqual(w.length, 9);
-      assert.strictEqual(new Set(w.map((x) => x.hole)).size, 9);
+      assert.ok(w.length >= 6, 'tràn đồng ít nhất 6 ô: ' + w.length);
+      assert.strictEqual(new Set(w.map((x) => x.hole)).size, w.length);
       assert.ok(w.filter((x) => x.type === 'bomb').length <= cfg.difficulty.rushBombMax);
     });
   });
@@ -238,6 +238,15 @@ async function playSession(token, targetScore, opts) {
     assert.ok(fin.data.result.durationMs <= 300000);
     // dọn dữ liệu của bài này để các bài đếm coupon phía sau không bị lệch
     db.run('DELETE FROM coupons WHERE session_id = ?', st.data.sessionId);
+  });
+
+  await step('Engine v7: vật phẩm ra đều — không bao giờ trống quá 2,5 giây (kể cả lúc có boss + tràn đồng)', () => {
+    const cfg = settings.gameConfig(settings.defaults());
+    for (let seed = 1; seed <= 120; seed++) {
+      const sp = new Engine.Spawner(seed, cfg); sp.generateUntil(300000);
+      const at = sp.spawns.filter((x) => x.type !== 'bomb').map((x) => x.at).sort((a, b) => a - b);
+      for (let i = 1; i < at.length; i++) assert.ok(at[i] - at[i - 1] <= 2500, 'seed ' + seed + ' trống ' + (at[i] - at[i - 1]) + 'ms lúc ' + at[i - 1]);
+    }
   });
 
   await step('Engine v2: 10 giây không thao tác -> tự kết thúc lượt', () => {

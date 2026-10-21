@@ -15,8 +15,8 @@ const DIFFICULTY_PRESETS = {
     spawnIntervalStart: 1900, spawnIntervalEnd: 600,
     upTimeStart: 1500, upTimeEnd: 800,
     maxActiveStart: 5, maxActiveEnd: 5,
-    bombRateStart: 12, bombRateEnd: 30, bombRateCap: 45,
-    overtimeEverySeconds: 20, overtimeBombStep: 3,
+    bombRateStart: 18, bombRateEnd: 42, bombRateCap: 55,
+    overtimeEverySeconds: 15, overtimeBombStep: 4,
     bombGraceSeconds: 4, levelSeconds: 15, jitterPct: 25, graceMs: 90
   },
   normal: {
@@ -26,8 +26,8 @@ const DIFFICULTY_PRESETS = {
     spawnIntervalStart: 1800, spawnIntervalEnd: 560,
     upTimeStart: 1500, upTimeEnd: 760,
     maxActiveStart: 5, maxActiveEnd: 5,
-    bombRateStart: 18, bombRateEnd: 40, bombRateCap: 55,
-    overtimeEverySeconds: 15, overtimeBombStep: 3,
+    bombRateStart: 24, bombRateEnd: 48, bombRateCap: 62,
+    overtimeEverySeconds: 12, overtimeBombStep: 4,
     bombGraceSeconds: 3, levelSeconds: 15, jitterPct: 25, graceMs: 80
   },
   hard: {
@@ -37,8 +37,8 @@ const DIFFICULTY_PRESETS = {
     spawnIntervalStart: 1650, spawnIntervalEnd: 500,
     upTimeStart: 1400, upTimeEnd: 720,
     maxActiveStart: 5, maxActiveEnd: 6,
-    bombRateStart: 20, bombRateEnd: 42, bombRateCap: 58,
-    overtimeEverySeconds: 15, overtimeBombStep: 3,
+    bombRateStart: 26, bombRateEnd: 52, bombRateCap: 66,
+    overtimeEverySeconds: 12, overtimeBombStep: 4,
     bombGraceSeconds: 3, levelSeconds: 15, jitterPct: 25, graceMs: 70
   }
 };
@@ -368,8 +368,21 @@ function migrate() {
   migrateV3();
   migrateTapRate();
   migrateHammerBonus();
+  migratePacingV7();
 }
 // Búa xịn cộng điểm nhiều hơn: +50% / +100% / +150% (thay mức cũ 20/50/100 hoặc khi chưa có)
+// Nhịp vật phẩm liên tục (engine v7) làm điểm tăng -> bom dày hơn: áp lại mức độ khó đang chọn
+function migratePacingV7() {
+  if (db.metaGet('mig_pacing_v7')) return;
+  const next = JSON.parse(JSON.stringify(load().settings));
+  const p = DIFFICULTY_PRESETS[next.difficulty.preset];
+  if (p) {
+    next.difficulty = Object.assign({ preset: next.difficulty.preset }, p);
+    const r = save(next, 'system', 'Nhịp vật phẩm liên tục, bom dày hơn để cân điểm');
+    if (!r.ok) console.error('[settings] migrate pacing failed', r.errors);
+  }
+  db.metaSet('mig_pacing_v7', String(Date.now()));
+}
 function migrateHammerBonus() {
   if (db.metaGet('mig_hammer_bonus_v2')) return;
   const next = JSON.parse(JSON.stringify(load().settings));
