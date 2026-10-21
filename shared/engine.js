@@ -123,10 +123,10 @@
     var R0 = rules(cfg);
     this.rushAt = R0.rushEvery > 0 ? R0.rushFirst : -1;
     this.lastGood = 0;            // lần gần nhất có vật phẩm đập được (không tính bom) trồi lên
-    this.streakEnd = 0;           // hết "đợt dồn" -> 1 nhịp nghỉ ngắn rồi sang đợt mới
   }
 
   var RUSH_DUR_FACTOR = 135;
+  var MAX_GAP = 2500;
   function rules(cfg) {
     var d = cfg.difficulty, b = cfg.boss || {}, bo = cfg.bombs || {};
     return {
@@ -138,8 +138,8 @@
       disguise2: Math.max(1, bo.disguiseLevel2 | 0 || 5),
       disguisePct: clamp(bo.disguisePct | 0, 0, 100),
       // Nhịp xuất hiện: không để quá "gap" ms không có vật phẩm (giữ được combo); xen kẽ nhịp nghỉ ngắn "breath" ms
-      gap: clamp(Math.round(Math.max(300, cfg.combo && cfg.combo.windowMs | 0 || 1500) * 0.75), 500, 1500),
-      breath: clamp(Math.round(Math.max(300, cfg.combo && cfg.combo.windowMs | 0 || 1500) * 0.87), 600, 1800),
+      // chốt an toàn: không để quá MAX_GAP ms không có vật phẩm đập được nào trồi lên
+      gap: MAX_GAP,
       // "Tràn đồng": thỉnh thoảng cả 9 ô cùng trồi lên
       rushFirst: Math.max(1000, (d.rushFirstSeconds | 0) * 1000),
       rushEvery: Math.max(0, (d.rushEverySeconds | 0) * 1000),
@@ -282,13 +282,7 @@
 
     var jit = Math.round(D.interval * clamp(cfg.difficulty.jitterPct | 0, 0, 60) / 100);
     var next = t + D.interval - jit + r.int(2 * jit + 1);
-    // Nhịp: dồn liên tục 6–10 giây (khoảng cách tối đa R.gap), rồi 1 nhịp nghỉ ngắn R.breath
-    var limit = R.gap;
-    if (t >= this.streakEnd) {
-      if (this.streakEnd > 0) limit = R.breath;
-      this.streakEnd = t + 6000 + r.int(4001);
-    }
-    if (next > t + limit) next = t + limit;
+    if (next > this.lastGood + R.gap) next = Math.max(t + 1, this.lastGood + R.gap);
     this.nextAt = next > t ? next : t + 1;
   };
 
