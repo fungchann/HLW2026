@@ -5,6 +5,9 @@ cd /d "%~dp0"
 rem Choi nhu that: moi trinh duyet la 1 nguoi choi, khong dung dang nhap demo
 set GUEST_LOGIN=true
 set ALLOW_DEMO_LOGIN=false
+rem Duong dan trang quan tri nam trong file .env tren may (khong dua len GitHub)
+set ADMIN_PATH=
+if exist ".env" for /f "tokens=1,* delims==" %%a in ('findstr /b "ADMIN_PATH=" ".env"') do set ADMIN_PATH=%%b
 
 where node >nul 2>nul
 if errorlevel 1 (
@@ -25,7 +28,7 @@ echo ================================================================
 echo    HALLOWEEN iNET 2026 - DANG KHOI DONG...
 echo.
 echo    Trang GAME  : http://localhost:8080/
-echo    Trang ADMIN : http://localhost:8080/hlw-admin-quantri128/
+echo    Trang ADMIN : http://localhost:8080/%ADMIN_PATH%/
 echo.
 echo    * Trinh duyet se tu mo 2 trang tren sau vai giay.
 echo    * KHONG DONG cua so den nay trong luc dang xem / choi.
@@ -33,7 +36,7 @@ echo    * Muon tat game: dong cua so nay.
 echo ================================================================
 echo.
 
-start "" powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 3; Start-Process 'http://localhost:8080/'; Start-Process 'http://localhost:8080/hlw-admin-quantri128/'; $f = Join-Path '%~dp0' 'data\INITIAL_ADMIN_PASSWORD.txt'; if (Test-Path $f) { Start-Process notepad $f }"
+start "" powershell -NoProfile -WindowStyle Hidden -Command "Start-Sleep -Seconds 3; Start-Process 'http://localhost:8080/'; Start-Process 'http://localhost:8080/%ADMIN_PATH%/'; $f = Join-Path '%~dp0' 'data\INITIAL_ADMIN_PASSWORD.txt'; if (Test-Path $f) { Start-Process notepad $f }"
 
 node --disable-warning=ExperimentalWarning server\index.js
 

@@ -34,6 +34,7 @@ function devSecrets() {
   for (const k of ['APP_SECRET', 'PORTAL_JWT_SECRET', 'INTEGRATION_SECRET']) {
     if (!s[k]) { s[k] = crypto.randomBytes(32).toString('base64url'); changed = true; }
   }
+  if (!s.ADMIN_PATH) { s.ADMIN_PATH = 'qt-' + crypto.randomBytes(12).toString('hex'); changed = true; }
   if (changed) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     fs.writeFileSync(f, JSON.stringify(s, null, 2), { mode: 0o600 });
@@ -43,7 +44,7 @@ function devSecrets() {
 
 const missing = ['APP_SECRET', 'PORTAL_JWT_SECRET', 'INTEGRATION_SECRET'].filter((k) => !E[k] || E[k].length < 32);
 let secrets = {};
-if (missing.length) {
+if (missing.length || !E.ADMIN_PATH) {
   secrets = devSecrets();
   console.log('[env] Dùng secret tự sinh lưu tại data/ cho: ' + missing.join(', '));
 }
@@ -76,7 +77,8 @@ const config = {
   // Đăng nhập không qua Portal: mỗi trình duyệt tự có 1 tài khoản người chơi THẬT (không gắn cờ test)
   GUEST_LOGIN: bool(E.GUEST_LOGIN, true),
   // Đường dẫn trang quản trị (khó đoán). Chỉ chữ, số, gạch ngang.
-  ADMIN_PATH: String(E.ADMIN_PATH || 'hlw-admin-quantri128').replace(/[^A-Za-z0-9_-]/g, '') || 'hlw-admin-quantri128',
+  // Đường dẫn trang quản trị: KHÔNG ghi trong code. Lấy từ ADMIN_PATH, không có thì dùng giá trị tự sinh trong data/secrets.json
+  ADMIN_PATH: String(E.ADMIN_PATH || secrets.ADMIN_PATH || '').replace(/[^A-Za-z0-9_-]/g, '') || 'qt-' + crypto.randomBytes(12).toString('hex'),
   PLAYER_TOKEN_TTL_H: parseFloat(E.PLAYER_TOKEN_TTL_H || '12'),
   ADMIN_SESSION_TTL_H: parseFloat(E.ADMIN_SESSION_TTL_H || '12'),
   ADMIN_IP_ALLOWLIST: list(E.ADMIN_IP_ALLOWLIST),

@@ -3,7 +3,7 @@
 Minigame Halloween (lấy cảm hứng từ trò Đập chuột) nhúng vào Portal iNET, kèm trang quản trị theo dõi chiến dịch realtime.
 
 - **Game**: `/` — 9 ô (3×3), bí ngô và vật phẩm Halloween trồi lên/lặn xuống, combo, bom, độ khó tăng dần, lượt chơi hồi theo thời gian, voucher theo mốc 200 / 450 / 700 điểm.
-- **Admin**: `/hlw-admin-quantri128/` (đổi được bằng biến `ADMIN_PATH`) — thống kê realtime, quản lý người chơi / lượt chơi / coupon, cấu hình game không cần sửa code, mô phỏng độ khó, nhật ký thao tác, phân quyền.
+- **Admin**: `/<ADMIN_PATH>/` — đường dẫn bí mật đặt trong `.env` (biến `ADMIN_PATH`), KHÔNG ghi trong code; nếu không đặt, máy chủ tự sinh và in ra khi khởi động — thống kê realtime, quản lý người chơi / lượt chơi / coupon, cấu hình game không cần sửa code, mô phỏng độ khó, nhật ký thao tác, phân quyền.
 - **Chống gian lận**: máy chủ tự tính lại điểm từ log thao tác (không tin điểm do trình duyệt gửi), lượt chơi và coupon chỉ được cấp ở máy chủ; phát hiện auto click / tăng tốc / sửa dữ liệu thì dừng lượt ngay, huỷ kết quả, báo cho người chơi và tự khoá tài khoản sau 3 lần. Mã coupon trong trang quản trị luôn được che, chỉ Quản lý bấm "Hiện" mới xem được (có ghi nhật ký).
 
 Không phụ thuộc thư viện ngoài: chỉ cần **Node.js ≥ 22.13** (khuyến nghị Node 24 LTS). Cơ sở dữ liệu SQLite tích hợp sẵn trong Node.
@@ -15,7 +15,7 @@ npm start
 ```
 
 - Mở game: http://localhost:8080 (mặc định vào là chơi: mỗi trình duyệt là 1 người chơi; khi Portal gửi token thì dùng tài khoản Portal).
-- Mở admin: http://localhost:8080/hlw-admin-quantri128/ → tài khoản `admin`, mật khẩu tạm nằm trong `data/INITIAL_ADMIN_PASSWORD.txt` (bắt buộc đổi ở lần đăng nhập đầu, sau đó xoá file này).
+- Mở admin: http://localhost:8080/<ADMIN_PATH>/ (xem trong file `.env` trên máy) → tài khoản `admin`, mật khẩu tạm nằm trong `data/INITIAL_ADMIN_PASSWORD.txt` (bắt buộc đổi ở lần đăng nhập đầu, sau đó xoá file này).
 - Muốn xem dashboard có số liệu: `npm run seed-demo` (tạo 300 người chơi giả, gắn cờ test, xoá được bằng 1 nút trong Admin).
 - Thử luồng đăng nhập giống Portal: `npm run portal-token -- KH123456` rồi mở link được in ra.
 - Chạy bộ kiểm thử tự động (31 bài: chấm điểm phía server, gian lận, coupon, phân quyền...): `npm test`.

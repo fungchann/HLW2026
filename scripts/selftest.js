@@ -17,7 +17,8 @@ process.env.PORT = String(18000 + Math.floor(Math.random() * 1000));
 process.env.HOST = '127.0.0.1';
 process.env.ALLOW_DEMO_LOGIN = 'true';
 process.env.GUEST_LOGIN = 'true';
-process.env.ADMIN_PATH = 'hlw-admin-quantri128';
+process.env.ADMIN_PATH = 'test-admin-' + require('crypto').randomBytes(6).toString('hex');
+const ADMIN = '/' + process.env.ADMIN_PATH;
 process.env.ADMIN_BOOTSTRAP_USER = 'boss';
 process.env.ADMIN_BOOTSTRAP_PASSWORD = 'Pumpkin2026Night';
 process.env.APP_SECRET = 'test-app-secret-0123456789-abcdefghijklmnop';
@@ -43,7 +44,7 @@ async function api(method, p, body, opts) {
   if (opts.token) headers.Authorization = 'Bearer ' + opts.token;
   if (opts.cookie) headers.Cookie = opts.cookie;
   if (opts.csrf) headers['X-CSRF-Token'] = opts.csrf;
-  if (p.startsWith('/api/admin') && !opts.raw) p = '/hlw-admin-quantri128' + p;
+  if (p.startsWith('/api/admin') && !opts.raw) p = ADMIN + p;
   const res = await fetch(BASE + p, { method, headers, body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)) });
   const text = await res.text();
   let data = null;
@@ -482,14 +483,14 @@ async function playSession(token, targetScore, opts) {
 
   // ---------------------------------------------------------- admin
   await step('Trang quản trị chỉ có ở đường dẫn bí mật; /admin/ không tồn tại; trang game không chứa mã coupon', async () => {
-    const a = await api('GET', '/hlw-admin-quantri128/');
+    const a = await api('GET', ADMIN + '/');
     assert.strictEqual(a.status, 200);
     assert.ok(String(a.data).includes('Đăng nhập'));
     assert.ok(/noindex/.test(a.headers.get('x-robots-tag') || ''));
     assert.strictEqual((await api('GET', '/admin/')).status, 404);
     assert.strictEqual((await api('GET', '/admin/admin.js')).status, 404);
     const home = await api('GET', '/');
-    assert.ok(!String(home.data).includes('hlw-admin'), 'trang game không lộ đường dẫn admin');
+    assert.ok(!String(home.data).includes(process.env.ADMIN_PATH), 'trang game không lộ đường dẫn admin');
     for (const p of ['/', '/js/game.js', '/js/api.js', '/api/public/config']) {
       const r = await api('GET', p);
       assert.ok(!String(typeof r.data === 'string' ? r.data : JSON.stringify(r.data)).includes(code), 'không lộ mã ở ' + p);
@@ -502,14 +503,14 @@ async function playSession(token, targetScore, opts) {
     assert.strictEqual(a.status, 404); assert.deepStrictEqual(a.data, b.data);
     assert.strictEqual((await api('POST', '/api/admin/login', { username: 'boss', password: 'x' }, { raw: true })).status, 404);
     for (const p of ['/server/env.js', '/server/coupons.js', '/data/hlw2026.db', '/data/secrets.json', '/.env', '/.git/config', '/package.json', '/scripts/selftest.js',
-      '/js/../../server/env.js', '/assets/..%2f..%2fserver%2fenv.js', '/hlw-admin-quantri128/../../data/secrets.json', '/hlw-admin-quantri128/..%2f..%2fdata%2fsecrets.json']) {
+      '/js/../../server/env.js', '/assets/..%2f..%2fserver%2fenv.js', ADMIN + '/../../data/secrets.json', ADMIN + '/..%2f..%2fdata%2fsecrets.json']) {
       const r = await api('GET', p, undefined, { raw: true });
       assert.strictEqual(r.status, 404, p + ' -> ' + r.status);
     }
     const home = await api('GET', '/');
     for (const p of ['/', '/js/game.js', '/js/api.js', '/js/art.js', '/shared/engine.js']) {
       const r = await api('GET', p);
-      assert.ok(!/hlw-admin|api\/admin|INTEGRATION_SECRET|APP_SECRET|COUPON_API_KEY/.test(String(r.data)), 'lộ thông tin quản trị ở ' + p);
+      assert.ok(!String(r.data).includes(process.env.ADMIN_PATH) && !/api\/admin|INTEGRATION_SECRET|APP_SECRET|COUPON_API_KEY/.test(String(r.data)), 'lộ thông tin quản trị ở ' + p);
     }
     assert.ok(home.headers.get('content-security-policy'));
   });
@@ -532,7 +533,7 @@ async function playSession(token, targetScore, opts) {
     const csp = g.headers.get('content-security-policy');
     assert.ok(/frame-ancestors[^;]*https:\/\/portal\.inet\.vn/.test(csp), csp);
     assert.ok(!g.headers.get('x-frame-options'), 'game không được gửi X-Frame-Options');
-    const a = await api('GET', '/hlw-admin-quantri128/');
+    const a = await api('GET', ADMIN + '/');
     assert.ok(/frame-ancestors 'none'/.test(a.headers.get('content-security-policy')));
     assert.strictEqual(a.headers.get('x-frame-options'), 'DENY');
     // tham số userId trên URL không có tác dụng (chỉ nhận token Portal có chữ ký)
