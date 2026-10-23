@@ -30,6 +30,7 @@ const ROLE_LABEL = { viewer: 'Chỉ xem', manager: 'Quản lý', superadmin: 'Qu
 
 // ------------------------------------------------------------ khởi tạo tài khoản đầu tiên
 function bootstrap() {
+  resetFromEnv();
   const n = db.get('SELECT COUNT(*) n FROM admins').n;
   if (n > 0) return;
   let user = env.ADMIN_BOOTSTRAP_USER || 'admin';
@@ -53,6 +54,32 @@ function bootstrap() {
   } else {
     console.log('[admin] Đã tạo tài khoản "' + user + '" từ biến môi trường ADMIN_BOOTSTRAP_*');
   }
+}
+
+// Cấp tài khoản admin mới / cấp lại mật khẩu bằng biến môi trường ADMIN_RESET_USER (khi không chạy được lệnh trên máy chủ).
+// Mỗi giá trị chỉ chạy 1 lần (khởi động lại không cấp lại). Mật khẩu tạm ghi vào data/ADMIN_<tên>_PASSWORD.txt (quyền 600),
+// bắt buộc đổi ở lần đăng nhập đầu. Vai trò: ADMIN_RESET_ROLE (mặc định superadmin).
+function resetFromEnv() {
+  const user = String(env.ADMIN_RESET_USER || '').trim();
+  if (!user) return;
+  if (!/^[a-zA-Z0-9_.-]{3,32}$/.test(user)) { console.warn('[admin] ADMIN_RESET_USER không hợp lệ (3–32 ký tự chữ/số/._-)'); return; }
+  const role = ['viewer', 'manager', 'superadmin'].includes(env.ADMIN_RESET_ROLE) ? env.ADMIN_RESET_ROLE : 'superadmin';
+  const mark = 'admin_reset:' + user + ':' + (env.ADMIN_RESET_TAG || '1');
+  if (db.metaGet(mark)) return;
+  const pass = sec.randomToken(9) + 'Aa1';
+  const ex = db.get('SELECT id FROM admins WHERE username = ?', user);
+  if (ex) {
+    db.run('UPDATE admins SET pass_hash = ?, role = ?, must_change = 1, disabled = 0, failed_count = 0, locked_until = NULL WHERE id = ?', sec.hashPassword(pass), role, ex.id);
+    db.run('DELETE FROM admin_sessions WHERE admin_id = ?', ex.id);
+  } else {
+    db.run('INSERT INTO admins (username, pass_hash, role, must_change, created_at) VALUES (?, ?, ?, 1, ?)', user, sec.hashPassword(pass), role, Date.now());
+  }
+  const f = path.join(env.DATA_DIR, 'ADMIN_' + user + '_PASSWORD.txt');
+  fs.writeFileSync(f, ['Tài khoản quản trị' + (ex ? ' (cấp lại mật khẩu)' : ' mới'), 'Username: ' + user, 'Password: ' + pass, 'Vai trò: ' + role,
+    'Trang quản trị: /' + env.ADMIN_PATH + '/', '', 'Đăng nhập, đổi mật khẩu ngay rồi XOÁ file này.', ''].join('\n'), { mode: 0o600 });
+  db.run('INSERT INTO audit_log (admin_name, action, target, ip, created_at) VALUES (?, ?, ?, ?, ?)', 'env', ex ? 'admin_reset_password' : 'admin_create', user, 'server', Date.now());
+  db.metaSet(mark, String(Date.now()));
+  console.log('[admin] ' + (ex ? 'Đã cấp lại mật khẩu' : 'Đã tạo tài khoản') + ' "' + user + '". Mật khẩu tạm lưu tại: ' + f);
 }
 
 // ------------------------------------------------------------ xác thực

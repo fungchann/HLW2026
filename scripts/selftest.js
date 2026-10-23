@@ -20,6 +20,7 @@ process.env.GUEST_LOGIN = 'true';
 process.env.ADMIN_PATH = 'test-admin-' + require('crypto').randomBytes(6).toString('hex');
 const ADMIN = '/' + process.env.ADMIN_PATH;
 process.env.ADMIN_BOOTSTRAP_USER = 'boss';
+process.env.ADMIN_RESET_USER = 'quanly2026';
 process.env.ADMIN_BOOTSTRAP_PASSWORD = 'Pumpkin2026Night';
 process.env.APP_SECRET = 'test-app-secret-0123456789-abcdefghijklmnop';
 process.env.PORTAL_JWT_SECRET = 'test-portal-secret-0123456789-abcdefghijkl';
@@ -624,6 +625,14 @@ async function playSession(token, targetScore, opts) {
     assert.strictEqual(db.get('SELECT status FROM coupons WHERE id = ?', cid).status, 'issued');
     const s = JSON.parse(JSON.stringify(settings.current())); s.coupons.provider = 'mock'; settings.save(s, 'test');
     db.run("DELETE FROM coupons WHERE provider = 'http'");
+  });
+
+  await step('Cấp tài khoản admin bằng biến ADMIN_RESET_USER: tạo đúng 1 lần, mật khẩu tạm trong file, bắt đổi khi đăng nhập', async () => {
+    const f = path.join(TMP, 'ADMIN_quanly2026_PASSWORD.txt');
+    assert.ok(fs.existsSync(f));
+    const pass = /Password: ([^\s]+)/.exec(fs.readFileSync(f, 'utf8'))[1];
+    const r = await api('POST', '/api/admin/login', { username: 'quanly2026', password: pass });
+    assert.strictEqual(r.status, 200); assert.strictEqual(r.data.admin.mustChange, true);
   });
 
   let cookie, csrf;
