@@ -210,7 +210,7 @@ button, input { font: inherit; }
 .hud-mid { gap: 8px; align-items: center; }
 .g-time { padding: 3px 10px; border-radius: 999px; background: rgba(26, 5, 2, .75); border: 2px solid var(--ink); font-weight: 800; font-size: .95rem; color: var(--bone); font-variant-numeric: tabular-nums; box-shadow: 0 3px 0 var(--ink); }
 .g-time.low { background: #c9221a; color: #fff; animation: bump 1s ease-in-out infinite; }
-.lv { padding: 3px 12px; border-radius: 999px; background: var(--plum); border: 2px solid var(--ink); font-weight: 800; font-size: .95rem; box-shadow: 0 3px 0 var(--ink); }
+.lv { white-space: nowrap; padding: 3px 12px; border-radius: 999px; background: var(--plum); border: 2px solid var(--ink); font-weight: 800; font-size: .95rem; box-shadow: 0 3px 0 var(--ink); }
 .hud-right { display: flex; align-items: center; gap: 10px; }
 .lives { display: flex; gap: 4px; }
 .life { width: 30px; height: 30px; transition: transform 200ms var(--ease-out), filter 200ms; }
@@ -220,9 +220,9 @@ button, input { font: inherit; }
 
 .tierbar { width: min(880px, 100%); position: relative; height: 34px; }
 .tier-track { position: absolute; left: 0; right: 0; top: 4px; height: 12px; border-radius: 999px; background: rgba(26, 5, 2, .8); border: 2px solid var(--ink); overflow: hidden; }
-.tier-fill { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(0); background: linear-gradient(90deg, var(--orange-d), var(--orange), var(--gold)); transition: transform 300ms var(--ease-out); }
+.tier-fill { position: absolute; inset: 0; transform-origin: left center; transform: scaleX(var(--r, 0)); background: linear-gradient(90deg, var(--orange-d), var(--orange), var(--gold)); transition: transform 300ms var(--ease-out); }
 .tier-marks { position: absolute; inset: 0; }
-.tier-mark { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.tier-mark { position: absolute; top: 0; left: var(--p); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
 .tier-mark::before { content: ''; width: 4px; height: 20px; border-radius: 2px; background: var(--ink); }
 .tier-mark span { font-size: .66rem; font-weight: 800; color: var(--muted); white-space: nowrap; margin-top: -2px; }
 .tier-mark.reward span { color: var(--bone); }
@@ -617,16 +617,6 @@ button, input { font: inherit; }
   .h-title { font-size: clamp(2rem, 8vh, 3rem); -webkit-text-stroke-width: 6px; }
   .home-main { flex-direction: row; flex-wrap: wrap; column-gap: 28px; row-gap: 8px; }
   .btn-xl { min-height: 54px; font-size: 1.3rem; }
-  .app[data-screen="play"] .scr-play { display: grid; grid-template-columns: 210px minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 18px; row-gap: 12px; align-items: start; }
-  .hud { grid-column: 1; grid-row: 1; width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 8px; row-gap: 6px; align-items: center; }
-  .hud-score { grid-column: 1; grid-row: 1; min-width: 0; }
-  .hud-mid { grid-column: 1; grid-row: 2; justify-content: flex-start; }
-  .hud-right { grid-column: 2; grid-row: 1 / span 2; flex-direction: column-reverse; align-items: center; gap: 6px; }
-  .tierbar { grid-column: 1; grid-row: 2; width: 100%; }
-  .tier-mark em { display: none; }
-  .board-wrap { grid-column: 2; grid-row: 1 / span 3; height: 100%; }
-  .combo { left: auto; right: calc(100% + 18px); top: 150px; transform: none; width: 200px; }
-  .board { --size: min(calc(100vh - 20px), calc(100vw - 270px), 520px); }
   .card { padding: 14px 18px; }
   .pause-card { gap: 8px; }
   .pause-score b { font-size: 2.2rem; }
@@ -634,8 +624,61 @@ button, input { font: inherit; }
   .pause-actions { gap: 8px; }
   .pause-actions .btn { min-height: 44px; }
   .pause-sound { top: 10px; right: 10px; width: 36px; height: 36px; }
-  @supports (height: 100dvh) { .board { --size: min(calc(100dvh - 20px), calc(100vw - 270px), 520px); } }
 }
+
+/* Màn ngang (máy tính, Portal, điện thoại xoay ngang): điểm / cấp / thời gian / mạng / mốc voucher xếp DỌC ở cột trái,
+   bàn 9 lỗ chiếm trọn chiều cao còn lại -> lỗ to nhất có thể. Mọi kích thước tính theo khung nhìn nên khi
+   thu nhỏ cửa sổ các thành phần chỉ co lại theo tỉ lệ, không đổi chỗ. */
+@media (min-aspect-ratio: 5/4) {
+  .scr-play { --side: clamp(184px, 15vw, 240px); --hud-h: clamp(150px, 30vh, 210px); --combo-h: clamp(78px, 17vh, 120px); --gap-x: clamp(12px, 2vw, 32px); }
+  .app[data-screen="play"] .scr-play {
+    display: grid; grid-template-columns: var(--side) minmax(0, 1fr); grid-template-rows: var(--hud-h) var(--combo-h) minmax(0, 1fr);
+    column-gap: var(--gap-x); row-gap: 8px; align-items: stretch; padding-top: calc(10px + var(--safe-t)); padding-bottom: calc(10px + var(--safe-b));
+  }
+  .hud { grid-column: 1; grid-row: 1; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: clamp(6px, 1.4vh, 12px); }
+  .hud-score { align-items: center; min-width: 0; }
+  .hud-score b { font-size: clamp(2.4rem, 9vh, 4.2rem); }
+  .hud-k { font-size: clamp(.75rem, 1.8vh, .95rem); color: var(--bone); }
+  /* nền tối mờ cho cả cột trái để điểm & mốc dễ đọc trên ảnh nền */
+  .scr-play::before { content: ""; grid-column: 1; grid-row: 1 / span 3; border-radius: 22px; background: rgba(26, 5, 2, .58); border: 3px solid rgba(42, 11, 5, .9); box-shadow: 0 6px 0 rgba(42, 11, 5, .6); pointer-events: none; }
+  .hud-mid { flex: none; }
+  .hud-right { gap: 8px; }
+  .scr-play .hud .btn-fs { display: inline-grid; }
+  .combo { left: auto; right: calc(100% + var(--gap-x)); top: calc(var(--hud-h) + 8px); height: var(--combo-h); width: var(--side); transform: none; align-content: center; }
+  .combo-n { font-size: clamp(2rem, 7vh, 3rem); }
+  .tierbar { grid-column: 1; grid-row: 3; width: 100%; height: auto; min-height: 0; }
+  .tier-track { left: calc(50% - 46px); right: auto; top: 12px; bottom: 12px; width: 14px; height: auto; }
+  .tier-fill { transform-origin: center bottom; transform: scaleY(var(--r, 0)); background: linear-gradient(0deg, var(--orange-d), var(--orange), var(--gold)); }
+  .tier-marks { inset: 12px 0; }
+  .tier-mark, .tier-mark.last, .tier-mark.first-left { top: auto; bottom: var(--p); left: calc(50% - 51px); transform: translateY(50%); flex-direction: row; align-items: center; gap: 6px; }
+  .tier-mark::before { width: 24px; height: 4px; }
+  .tier-mark span { margin: 0; font-size: clamp(.7rem, 1.9vh, .9rem); }
+  .tier-mark em { display: inline; }
+  .board-wrap { grid-column: 2; grid-row: 1 / span 3; height: 100%; }
+  .board { --size: min(calc(100vh - 20px - var(--safe-t) - var(--safe-b)), calc(100vw - var(--side) - var(--gap-x) - 32px), 860px); }
+  @supports (height: 100dvh) { .board { --size: min(calc(100dvh - 20px - var(--safe-t) - var(--safe-b)), calc(100vw - var(--side) - var(--gap-x) - 32px), 860px); } }
+}
+@media (min-aspect-ratio: 5/4) and (max-height: 460px) {
+  .scr-play { --side: clamp(170px, 22vw, 196px); --hud-h: 132px; --combo-h: 70px; }
+  .hud { gap: 5px; }
+  .hud-score b { font-size: 2.2rem; }
+  .hud-k { font-size: .65rem; }
+  .lv, .g-time { font-size: .82rem; padding: 2px 9px; }
+  .hud-right .icon-btn { width: 40px; height: 40px; }
+  .hud-right .icon-btn .ic { width: 20px; height: 20px; }
+  .life { width: 26px; height: 26px; }
+  .combo-k { font-size: .7rem; }
+  .combo-n { font-size: 1.9rem; }
+  .tier-mark:not(.reward) span { display: none; }
+}
+
+/* nút toàn màn hình nổi: chỉ hiện khi đang mở bảng/hộp thoại (màn chính và màn chơi đã có nút riêng) */
+.fs-float { position: fixed; left: calc(12px + env(safe-area-inset-left, 0px)); bottom: calc(12px + var(--safe-b)); z-index: 95; width: 42px; height: 42px; display: none; }
+.fs-float .ic { width: 20px; height: 20px; }
+.app:has(.overlay:not([hidden]), .modal:not([hidden])) .fs-float { display: inline-grid; }
+/* màn dọc: HUD trên cùng đã chật nên nút toàn màn hình nằm góc dưới trái (dưới bàn chơi luôn còn chỗ trống) */
+.hud .btn-fs { display: none; }
+@media (max-aspect-ratio: 1249/1000) { .app[data-screen="play"] .fs-float { display: inline-grid; } }
 
 @media (prefers-reduced-motion: reduce) {
   .bg-stars, .bg-fog, .bats i, .home-mascot, .btn-xl, .go-big, .item-art { animation: none !important; }

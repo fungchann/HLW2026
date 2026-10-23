@@ -192,23 +192,22 @@
   // Toàn màn hình (máy tính, Android, iPad). iPhone Safari không hỗ trợ toàn màn hình cho trang web -> ẩn nút.
   // Khi nhúng trong Portal, thẻ iframe cần có allow="fullscreen" thì nút mới hoạt động.
   (function setupFullscreen() {
-    var de = document.documentElement, btn = $('btn-fs');
+    var de = document.documentElement, btns = document.querySelectorAll('.btn-fs');
     var req = de.requestFullscreen || de.webkitRequestFullscreen;
     var enabled = document.fullscreenEnabled || document.webkitFullscreenEnabled;
-    if (!btn || !req || !enabled) return;
+    if (!btns.length || !req || !enabled) return;
     function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
     function paint() {
-      btn.innerHTML = Art.ui(isFs() ? 'exitFullscreen' : 'fullscreen');
-      btn.setAttribute('aria-label', isFs() ? 'Thoát toàn màn hình' : 'Toàn màn hình');
-      btn.title = btn.getAttribute('aria-label');
+      var label = isFs() ? 'Thoát toàn màn hình' : 'Toàn màn hình', icon = Art.ui(isFs() ? 'exitFullscreen' : 'fullscreen');
+      Array.prototype.forEach.call(btns, function (btn) { btn.innerHTML = icon; btn.setAttribute('aria-label', label); btn.title = label; });
     }
-    btn.hidden = false;
-    paint();
-    btn.addEventListener('click', function () {
+    function toggle() {
       Sound.unlock(); Sound.play('click');
       if (isFs()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
       try { var p = req.call(de); if (p && p.catch) p.catch(function () { toast('Trình duyệt không cho phép toàn màn hình ở đây', null, 'bad'); }); } catch (e) { toast('Trình duyệt không cho phép toàn màn hình ở đây', null, 'bad'); }
-    });
+    }
+    Array.prototype.forEach.call(btns, function (btn) { btn.hidden = false; btn.addEventListener('click', toggle); });
+    paint();
     document.addEventListener('fullscreenchange', paint);
     document.addEventListener('webkitfullscreenchange', paint);
   })();
@@ -519,7 +518,7 @@
     $('g-tiermarks').innerHTML = tiers.map(function (t, i) {
       var name = t.reward ? ' ' + String(t.short || t.label).split(' ')[0] : '';
       return '<div class="tier-mark' + (t.reward ? ' reward' : '') + (i === tiers.length - 1 ? ' last' : '') + '" data-id="' + esc(t.id) +
-        '" style="left:' + (t.score / max * 100).toFixed(2) + '%" title="' + esc(t.reward ? t.label : 'Mốc ' + t.score) + '"><span>' + t.score + '<em>' + esc(name) + '</em></span></div>';
+        '" style="--p:' + (t.score / max * 100).toFixed(2) + '%" title="' + esc(t.reward ? t.label : 'Mốc ' + t.score) + '"><span>' + t.score + '<em>' + esc(name) + '</em></span></div>';
     }).join('');
   }
 
@@ -531,7 +530,7 @@
 
   function updateTierbar() {
     var score = G.game.score;
-    $('g-tierfill').style.transform = 'scaleX(' + Math.min(1, score / (G.tierMax || 1)).toFixed(4) + ')';
+    $('g-tierfill').style.setProperty('--r', Math.min(1, score / (G.tierMax || 1)).toFixed(4));
     Array.prototype.forEach.call($('g-tiermarks').children, function (m) {
       var id = m.getAttribute('data-id');
       var t = G.tiers.find(function (x) { return x.id === id; });

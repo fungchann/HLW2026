@@ -28,7 +28,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap">
-  <link rel="stylesheet" href="/css/game.css?v=27">
+  <link rel="stylesheet" href="/css/game.css?v=28">
 </head>
 <body>
 <div id="app" class="app" data-screen="boot">
@@ -73,7 +73,7 @@
       <div class="stat" title="Điểm cao nhất của bạn"><span class="stat-k">Kỷ lục</span><b id="h-best">0</b></div>
       <div class="stat" title="Combo cao nhất của bạn"><span class="stat-k">Combo</span><b id="h-combo">x0</b></div>
       <div class="stat stat-turns" title="Lượt chơi còn lại"><span class="stat-k">Lượt</span><b id="h-turns">3/3</b><span class="stat-sub" id="h-regen"></span></div>
-      <button class="icon-btn" id="btn-fs" type="button" aria-label="Toàn màn hình" title="Toàn màn hình" hidden></button>
+      <button class="icon-btn btn-fs" id="btn-fs" type="button" aria-label="Toàn màn hình" title="Toàn màn hình" hidden></button>
       <button class="icon-btn" id="btn-sound" type="button" aria-label="Tắt âm thanh" aria-pressed="true"></button>
     </header>
 
@@ -108,6 +108,7 @@
       </div>
       <div class="hud-right">
         <div class="lives" id="g-lives" title="Trúng bom 2 lần là thua"></div>
+        <button class="icon-btn btn-fs" type="button" aria-label="Toàn màn hình" title="Toàn màn hình" hidden></button>
         <button class="icon-btn" id="btn-pause" type="button" aria-label="Tạm dừng"></button>
       </div>
     </header>
@@ -199,14 +200,15 @@
     </div>
   </div>
 
+  <button class="icon-btn btn-fs fs-float" type="button" aria-label="Toàn màn hình" title="Toàn màn hình" hidden></button>
   <div class="toasts" id="toasts" aria-live="polite"></div>
   <div class="test-ribbon" id="test-ribbon" hidden>CHẾ ĐỘ TEST</div>
 </div>
 
-<script src="/shared/engine.js?v=27"></script>
-<script src="/js/art.js?v=27"></script>
-<script src="/js/audio.js?v=27"></script>
-<script src="/js/api.js?v=27"></script>
-<script src="/js/game.js?v=27"></script>
+<script src="/shared/engine.js?v=28"></script>
+<script src="/js/art.js?v=28"></script>
+<script src="/js/audio.js?v=28"></script>
+<script src="/js/api.js?v=28"></script>
+<script src="/js/game.js?v=28"></script>
 </body>
 </html>
