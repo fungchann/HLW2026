@@ -30,7 +30,10 @@ const ROLE_LABEL = { viewer: 'Chỉ xem', manager: 'Quản lý', superadmin: 'Qu
 
 // ------------------------------------------------------------ khởi tạo tài khoản đầu tiên
 function bootstrap() {
+  bootstrapFirst();
   resetFromEnv();
+}
+function bootstrapFirst() {
   const n = db.get('SELECT COUNT(*) n FROM admins').n;
   if (n > 0) return;
   let user = env.ADMIN_BOOTSTRAP_USER || 'admin';
