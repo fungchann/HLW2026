@@ -86,12 +86,12 @@ function defaults() {
         url: 'https://inet.vn/email', prefix: 'HLWEM', quota: 0, apiPoint: 200
       },
       {
-        id: 'cloud', score: 500, enabled: true, reward: true,
+        id: 'cloud', score: 450, enabled: true, reward: true,
         label: 'Voucher Cloud Server 35%', short: 'Cloud 35%', product: 'Cloud Server, Cloud VPS Storage', discount: 35,
         url: 'https://inet.vn/cloud-server', prefix: 'HLWCL', quota: 0, apiPoint: 450
       },
       {
-        id: 'hosting', score: 800, enabled: true, reward: true,
+        id: 'hosting', score: 700, enabled: true, reward: true,
         label: 'Voucher Hosting 40%', short: 'Hosting 40%', product: 'Hosting', discount: 40,
         url: 'https://inet.vn/hosting', prefix: 'HLWHO', quota: 0, apiPoint: 700
       }
@@ -370,7 +370,7 @@ function migrate() {
   migrateV3();
   migrateTapRate();
   migrateHammerBonus();
-  migrateTiers500800();
+  migrateTiers450700();
   migrateCouponProvider();
 }
 // Máy chủ đã có token API iNET (COUPON_API_KEY) mà vẫn đang dùng mã giả lập -> chuyển 1 lần sang sinh mã thật.
@@ -386,20 +386,20 @@ function migrateCouponProvider() {
   }
   db.metaSet('mig_provider_http', String(Date.now()));
 }
-// Mốc voucher mới: Cloud 450 -> 500, Hosting 700 -> 800 (chỉ đổi nếu admin chưa tự chỉnh khác)
-function migrateTiers500800() {
-  if (db.metaGet('mig_tiers_500_800')) return;
+// Mốc voucher theo đúng API iNET: Cloud 450 điểm, Hosting 700 điểm (đưa 500/800 về lại; chỉ đổi nếu đang đúng 500/800)
+function migrateTiers450700() {
+  if (db.metaGet('mig_tiers_450_700')) return;
   const next = JSON.parse(JSON.stringify(load().settings));
   let changed = false;
   for (const t of next.tiers) {
-    if (t.id === 'cloud' && t.score === 450) { t.score = 500; changed = true; }
-    if (t.id === 'hosting' && t.score === 700) { t.score = 800; changed = true; }
+    if (t.id === 'cloud' && t.score === 500) { t.score = 450; changed = true; }
+    if (t.id === 'hosting' && t.score === 800) { t.score = 700; changed = true; }
   }
   if (changed) {
-    const r = save(next, 'system', 'Mốc voucher mới: Cloud 500 điểm, Hosting 800 điểm');
+    const r = save(next, 'system', 'Mốc voucher theo API: Cloud 450 điểm, Hosting 700 điểm');
     if (!r.ok) console.error('[settings] migrate tiers failed', r.errors);
   }
-  db.metaSet('mig_tiers_500_800', String(Date.now()));
+  db.metaSet('mig_tiers_450_700', String(Date.now()));
 }
 // Búa xịn cộng điểm nhiều hơn: +50% / +100% / +150% (thay mức cũ 20/50/100 hoặc khi chưa có)
 function migrateHammerBonus() {
