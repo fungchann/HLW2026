@@ -65,66 +65,100 @@ function fulfillSync(c, s) {
 }
 
 const inflight = new Map();
+// Lỗi mạng mà CHẮC CHẮN yêu cầu chưa tới được máy chủ iNET -> thử lại an toàn, không sợ sinh trùng mã
+const SAFE_NET_ERRORS = new Set(['ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ENETUNREACH', 'EHOSTUNREACH', 'UND_ERR_CONNECT_TIMEOUT']);
+const MAX_API_ATTEMPTS = 6;
+
+// "description" gửi API: email khách (từ Portal). Chưa có email -> mã người chơi + mã lượt để tra ngược trong admin.
+function couponDescription(c) {
+  const p = db.get('SELECT ext_id, email_enc FROM players WHERE id = ?', c.player_id) || {};
+  if (p.email_enc) { const e = decryptSafe(p.email_enc); if (e) return e; }
+  return 'HLW2026 | ' + (p.ext_id || 'player-' + c.player_id) + ' | luot ' + String(c.session_id || c.id).slice(0, 24);
+}
+
+/*
+ * API iNET: POST {point, description} + header x-token-api.
+ *  - Thành công (HTTP 200): {"code":"ABCDEFGHIJ","status":"approved","promotionValue":20,...}
+ *  - Lỗi: CŨNG trả HTTP 200 nhưng {"status":"error","message":"..."} -> phải kiểm tra nội dung
+ * Mức giảm do máy chủ iNET quyết theo point; game chỉ gửi point của mốc (cấu hình apiPoint).
+ */
 async function fulfillHttp(c, s) {
   if (inflight.has(c.id)) return inflight.get(c.id);
   const p = (async () => {
-    if (!env.COUPON_API_URL) {
-      db.run('UPDATE coupons SET error = ? WHERE id = ?', 'Chưa cấu hình COUPON_API_URL', c.id);
+    const fail = (msg, opts) => {
+      opts = opts || {};
+      db.run('UPDATE coupons SET error = ?, api_attempts = api_attempts + ?, api_uncertain = ? WHERE id = ?',
+        String(msg).slice(0, 300), opts.counted === false ? 0 : 1, opts.uncertain ? 1 : 0, c.id);
+      if (opts.alert) realtime.activity({ type: 'warning', text: 'Tạo mã coupon #' + c.id + ' lỗi: ' + String(msg).slice(0, 120) });
       return false;
-    }
-    const player = db.get('SELECT ext_id FROM players WHERE id = ?', c.player_id);
+    };
+    if (!env.COUPON_API_URL || !env.COUPON_API_KEY) return fail('Chưa cấu hình API coupon (COUPON_API_URL / COUPON_API_KEY)', { counted: false });
     const tier = tierById(s, c.tier_id) || {};
-    const body = JSON.stringify({
-      requestId: 'hlw2026-' + c.id,
-      customerId: player ? player.ext_id : null,
-      tier: c.tier_id,
-      product: c.product,
-      discountPercent: c.discount,
-      prefix: tier.prefix || '',
-      expiresAt: c.expires_at ? new Date(c.expires_at).toISOString() : null,
-      campaign: s.campaign.name
-    });
-    const ts = String(Math.floor(Date.now() / 1000));
+    const point = Number(tier.apiPoint) || ({ email: 200, cloud: 450, hosting: 700 }[c.tier_id] || 0);
+    if (![200, 450, 700].includes(point)) return fail('Mốc "' + c.tier_id + '" chưa gán point cho API (200/450/700)', { counted: false, alert: true });
+    db.run('UPDATE coupons SET api_attempts = api_attempts + 1 WHERE id = ?', c.id);
+    const body = JSON.stringify({ point, description: couponDescription(c) });
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), env.COUPON_API_TIMEOUT);
+    let res;
     try {
-      const res = await fetch(env.COUPON_API_URL, {
+      res = await fetch(env.COUPON_API_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + env.COUPON_API_KEY,
-          'X-HLW-Timestamp': ts,
-          'X-HLW-Signature': 'sha256=' + sec.hmac(env.COUPON_API_KEY || env.INTEGRATION_SECRET, ts + '.' + body)
-        },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'x-token-api': env.COUPON_API_KEY },
         body,
         signal: ctl.signal
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data || typeof data.code !== 'string' || !data.code.trim()) {
-        db.run('UPDATE coupons SET error = ? WHERE id = ?', 'API coupon lỗi ' + res.status, c.id);
-        return false;
-      }
-      setCode(c.id, sec.normalizeCode(data.code).slice(0, 64));
-      return true;
     } catch (e) {
-      db.run('UPDATE coupons SET error = ? WHERE id = ?', 'Không gọi được API coupon: ' + (e.name === 'AbortError' ? 'quá thời gian' : e.message), c.id);
-      return false;
+      clearTimeout(timer);
+      const code = e && e.cause && e.cause.code;
+      if (e.name !== 'AbortError' && SAFE_NET_ERRORS.has(code)) return fail('Không kết nối được API coupon (' + code + ')', { counted: false });
+      // quá thời gian / đứt kết nối giữa chừng: KHÔNG biết mã đã được sinh chưa -> không tự gọi lại (tránh sinh 2 mã), chờ Admin kiểm tra
+      return fail('Không chắc API đã sinh mã chưa (' + (e.name === 'AbortError' ? 'quá thời gian chờ' : (code || e.message)) + ') — kiểm tra với kỹ thuật rồi bấm "Tạo lại mã"', { counted: false, uncertain: true, alert: true });
     } finally {
       clearTimeout(timer);
-      inflight.delete(c.id);
     }
-  })();
+    let data = null;
+    const text = await res.text().catch(() => '');
+    try { data = JSON.parse(text); } catch (e) { /* không phải JSON */ }
+    if (!res.ok) return fail('API coupon trả HTTP ' + res.status, { alert: res.status === 401 || res.status === 403 });
+    if (!data || typeof data !== 'object') return fail('API coupon trả dữ liệu không hợp lệ');
+    if (data.status === 'error') return fail('API coupon báo lỗi: ' + String(data.message || '').slice(0, 200), { alert: true });
+    const code = typeof data.code === 'string' ? sec.normalizeCode(data.code).slice(0, 64) : '';
+    if (!code) return fail('API coupon không trả về mã');
+    if (data.promotionValue !== undefined && Math.round(Number(data.promotionValue)) !== Number(c.discount)) {
+      realtime.activity({ type: 'warning', text: 'Coupon #' + c.id + ': API cấp giảm ' + data.promotionValue + '% nhưng mốc "' + c.tier_id + '" ghi ' + c.discount + '% — kiểm tra cấu hình mốc/point' });
+    }
+    try { setCode(c.id, code); } catch (e) { return fail('Mã trùng với mã đã có: ' + code, { alert: true }); }
+    db.run('UPDATE coupons SET api_uncertain = 0 WHERE id = ?', c.id);
+    return true;
+  })().finally(() => inflight.delete(c.id));
   inflight.set(c.id, p);
   return p;
 }
 
-async function fulfill(couponId) {
+// force: Admin bấm "Tạo lại mã" (kể cả khi lần trước không chắc đã sinh)
+async function fulfill(couponId, opts) {
   const c = db.get('SELECT * FROM coupons WHERE id = ?', couponId);
   if (!c || c.status !== 'pending') return c;
   const s = settings.current();
-  if (c.provider === 'http') await fulfillHttp(c, s);
-  else fulfillSync(c, s);
+  if (c.provider === 'http') {
+    const force = opts && opts.force;
+    if (!force && (c.api_uncertain || c.api_attempts >= MAX_API_ATTEMPTS)) return c;
+    await fulfillHttp(c, s);
+  } else fulfillSync(c, s);
   return db.get('SELECT * FROM coupons WHERE id = ?', couponId);
+}
+
+// Job định kỳ: thử lại các coupon đang chờ mã (lỗi rõ ràng, chưa vượt số lần thử)
+let retrying = false;
+async function retryPending() {
+  if (retrying) return;
+  retrying = true;
+  try {
+    const rows = db.all("SELECT id FROM coupons WHERE status = 'pending' AND provider = 'http' AND api_uncertain = 0 AND api_attempts < ? AND created_at > ? ORDER BY id LIMIT 20",
+      MAX_API_ATTEMPTS, Date.now() - 3 * 86400e3);
+    for (const r of rows) await fulfill(r.id);
+  } finally { retrying = false; }
 }
 
 /*
@@ -256,6 +290,6 @@ function poolStats() {
 }
 
 module.exports = {
-  award, fulfill, reveal, listForPlayer, publicCoupon, couponStatus, decryptSafe, maskCode, findByCode,
+  award, fulfill, reveal, listForPlayer, publicCoupon, couponStatus, decryptSafe, maskCode, findByCode, retryPending,
   markRedeemed, importPool, poolStats, ownedCount, tierById
 };

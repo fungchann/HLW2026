@@ -83,17 +83,17 @@ function defaults() {
       {
         id: 'email', score: 200, enabled: true, reward: true,
         label: 'Voucher Email tên miền 20%', short: 'Email 20%', product: 'Email tên miền', discount: 20,
-        url: 'https://inet.vn/email', prefix: 'HLWEM', quota: 0
+        url: 'https://inet.vn/email', prefix: 'HLWEM', quota: 0, apiPoint: 200
       },
       {
         id: 'cloud', score: 500, enabled: true, reward: true,
         label: 'Voucher Cloud Server 35%', short: 'Cloud 35%', product: 'Cloud Server, Cloud VPS Storage', discount: 35,
-        url: 'https://inet.vn/cloud-server', prefix: 'HLWCL', quota: 0
+        url: 'https://inet.vn/cloud-server', prefix: 'HLWCL', quota: 0, apiPoint: 450
       },
       {
         id: 'hosting', score: 800, enabled: true, reward: true,
         label: 'Voucher Hosting 40%', short: 'Hosting 40%', product: 'Hosting', discount: 40,
-        url: 'https://inet.vn/hosting', prefix: 'HLWHO', quota: 0
+        url: 'https://inet.vn/hosting', prefix: 'HLWHO', quota: 0, apiPoint: 700
       }
     ],
     coupons: {
@@ -296,7 +296,9 @@ function sanitize(input) {
       discount: int(t.discount, 0, 100, 0),
       url: url(t.url, ''),
       prefix: str(t.prefix, 12, '').replace(/[^A-Z0-9]/gi, '').toUpperCase(),
-      quota: int(t.quota, 0, 10000000, 0)
+      quota: int(t.quota, 0, 10000000, 0),
+      // "point" gửi API iNET để chọn chiến dịch (API chỉ nhận 200 | 450 | 700), độc lập với mốc điểm trong game
+      apiPoint: [200, 450, 700].includes(Number(t.apiPoint)) ? Number(t.apiPoint) : ({ email: 200, cloud: 450, hosting: 700 }[id] || 0)
     };
     if (reward && !tier.url) errors.push('Mốc "' + tier.label + '" chưa có URL đăng ký sản phẩm.');
     out.tiers.push(tier);

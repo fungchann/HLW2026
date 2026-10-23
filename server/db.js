@@ -194,6 +194,11 @@ function open(file) {
   // nâng cấp: cột tạm khoá chơi (gian lận liên tiếp)
   const cols = conn.prepare('PRAGMA table_info(players)').all().map((c) => c.name);
   if (!cols.includes('locked_until')) conn.exec('ALTER TABLE players ADD COLUMN locked_until INTEGER NOT NULL DEFAULT 0');
+  // email khách lấy từ token Portal (mã hoá AES-GCM), dùng làm "description" khi sinh coupon
+  if (!cols.includes('email_enc')) conn.exec('ALTER TABLE players ADD COLUMN email_enc TEXT');
+  const ccols = conn.prepare('PRAGMA table_info(coupons)').all().map((c) => c.name);
+  if (!ccols.includes('api_attempts')) conn.exec('ALTER TABLE coupons ADD COLUMN api_attempts INTEGER NOT NULL DEFAULT 0');
+  if (!ccols.includes('api_uncertain')) conn.exec('ALTER TABLE coupons ADD COLUMN api_uncertain INTEGER NOT NULL DEFAULT 0');
   return conn;
 }
 

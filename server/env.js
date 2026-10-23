@@ -69,9 +69,12 @@ const config = {
   INTEGRATION_SECRET: pick('INTEGRATION_SECRET'),
   COUPON_ENC_KEY: E.COUPON_ENC_KEY || '',
 
-  COUPON_API_URL: E.COUPON_API_URL || '',
+  // API sinh coupon của iNET (gọi từ máy chủ game, token KHÔNG bao giờ xuống trình duyệt)
+  COUPON_API_URL: E.COUPON_API_URL || 'https://inet.vn/api/campaign/gencouponhalloween2026',
   COUPON_API_KEY: E.COUPON_API_KEY || '',
-  COUPON_API_TIMEOUT: parseInt(E.COUPON_API_TIMEOUT || '8000', 10),
+  COUPON_API_TIMEOUT: parseInt(E.COUPON_API_TIMEOUT || '15000', 10),
+  // tên trường email trong token Portal (JWT)
+  PORTAL_JWT_EMAIL_CLAIM: E.PORTAL_JWT_EMAIL_CLAIM || 'email',
 
   ALLOW_DEMO_LOGIN: bool(E.ALLOW_DEMO_LOGIN, false),
   // Đăng nhập không qua Portal: mỗi trình duyệt tự có 1 tài khoản người chơi THẬT (không gắn cờ test)

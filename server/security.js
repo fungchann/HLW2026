@@ -64,7 +64,9 @@ function verifyPortalJwt(token, nowMs) {
     const aud = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
     if (!aud.includes(env.PORTAL_JWT_AUDIENCE)) throw new TokenError('aud', 'Token không dành cho ứng dụng này');
   }
-  return { sub, exp: payload.exp, iat, jti: typeof payload.jti === 'string' ? payload.jti.slice(0, 128) : null };
+  const rawEmail = payload[env.PORTAL_JWT_EMAIL_CLAIM || 'email'];
+  const email = typeof rawEmail === 'string' && /^[^\s@<>"']{1,64}@[^\s@<>"']{1,190}\.[^\s@<>"']{2,}$/.test(rawEmail.trim()) ? rawEmail.trim().toLowerCase() : null;
+  return { sub, email, exp: payload.exp, iat, jti: typeof payload.jti === 'string' ? payload.jti.slice(0, 128) : null };
 }
 
 // ------------------------------------------------------------ mật khẩu admin (scrypt)

@@ -1029,14 +1029,14 @@
       return '<div class="tier-row"><div class="tier-row-head"><b>' + esc(t.label || t.id) + '</b>' + (man ? '<button class="btn btn-sm btn-ghost" type="button" data-del-tier="' + idx + '">Xoá mốc</button>' : '') + '</div>' +
         inp(p + 'id', 'Mã mốc', 'str', { hint: 'không đổi sau khi đã chạy' }) + inp(p + 'score', 'Điểm tối thiểu', 'int') + inp(p + 'enabled', 'Bật', 'bool') + inp(p + 'reward', 'Có voucher', 'bool') +
         inp(p + 'label', 'Tên voucher', 'str') + inp(p + 'short', 'Tên ngắn', 'str') + inp(p + 'product', 'Dịch vụ áp dụng', 'str') + inp(p + 'discount', 'Giảm (%)', 'int', { min: 0, max: 100 }) +
-        inp(p + 'prefix', 'Tiền tố mã (mock)', 'str') + inp(p + 'quota', 'Hạn mức phát hành (0 = không giới hạn)', 'int', { min: 0 }) +
+        inp(p + 'prefix', 'Tiền tố mã (mock)', 'str') + (t.reward ? inp(p + 'apiPoint', 'Point gửi API iNET', 'select', { options: [['200', '200 — Email 20%'], ['450', '450 — Cloud 35%'], ['700', '700 — Hosting 40%']], hint: 'API chọn chiến dịch theo point này' }) : '') + inp(p + 'quota', 'Hạn mức phát hành (0 = không giới hạn)', 'int', { min: 0 }) +
         inp(p + 'url', 'URL trang đăng ký dịch vụ', 'url', { wide: true, hint: 'Nút "Đăng ký ngay" mở link này (tự thêm UTM nếu bật)' }) + '</div>';
     }).join('');
     html += section('tiers', 'Mốc điểm & voucher', 'Mỗi lượt chơi nhận voucher của mốc cao nhất đạt được (trừ khi đã sở hữu)', '<div class="form-section">' + tiersHtml +
       (man ? '<div><button class="btn btn-sm" type="button" id="tier-add">+ Thêm mốc</button></div>' : '') + '</div>');
     html += section('coupons', 'Coupon', 'Hạn dùng, nguồn mã và quy tắc cấp', '<div class="form-grid">' +
       inp('coupons.expiresAt', 'Hạn sử dụng coupon', 'dt') +
-      inp('coupons.provider', 'Nguồn mã coupon', 'select', { options: [['mock', 'Mã giả lập (chạy thử)'], ['pool', 'Kho mã nhập sẵn'], ['http', 'API hệ thống billing' + (S.couponApi ? '' : ' (chưa cấu hình .env)')]] }) +
+      inp('coupons.provider', 'Nguồn mã coupon', 'select', { options: [['mock', 'Mã giả lập (chạy thử)'], ['pool', 'Kho mã nhập sẵn'], ['http', 'API iNET (sinh mã thật)' + (S.couponApi ? '' : ' — chưa có COUPON_API_KEY')]] }) +
       inp('coupons.maxPerTierPerPlayer', 'Số voucher tối đa / mốc / người', 'int', { min: 0, hint: '0 = không giới hạn (đạt mốc là nhận)' }) +
       inp('coupons.codeParam', 'Tham số gắn mã vào URL đăng ký', 'str', { hint: 'vd: coupon → ?coupon=MÃ (để trống nếu không dùng)' }) +
       inp('coupons.fallbackToLowerTier', 'Nếu đã có voucher mốc cao nhất, tự cấp voucher mốc thấp hơn chưa có', 'bool', { wide: true }) +

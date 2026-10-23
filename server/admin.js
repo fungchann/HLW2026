@@ -464,7 +464,7 @@ function routes(router) {
       if (!['issued'].includes(c.status)) throw new HttpError(400, 'bad_status', 'Chỉ đánh dấu được coupon đang hiệu lực');
       coupons.markRedeemed(c, String(b.ref || 'admin').slice(0, 100), now);
     } else if (b.action === 'retry') {
-      await coupons.fulfill(c.id);
+      await coupons.fulfill(c.id, { force: true });
     } else throw new HttpError(400, 'bad_action', 'Thao tác không hợp lệ');
     audit(req, 'coupon_' + b.action, c.id, { reason: b.reason, ref: b.ref });
     realtime.tick();
@@ -506,7 +506,7 @@ function routes(router) {
   // Cấu hình
   R('GET', '/api/admin/settings', 'viewer', () => ({
     version: settings.version(), settings: settings.current(), presets: settings.DIFFICULTY_PRESETS,
-    history: settings.history(30), status: settings.campaignStatus(), env: { couponApi: !!env.COUPON_API_URL }
+    history: settings.history(30), status: settings.campaignStatus(), env: { couponApi: !!(env.COUPON_API_URL && env.COUPON_API_KEY) }
   }));
   R('PUT', '/api/admin/settings', 'manager', async (req) => {
     const b = await readJson(req, 256 * 1024);

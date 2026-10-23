@@ -25,6 +25,25 @@ process.env.APP_SECRET = 'test-app-secret-0123456789-abcdefghijklmnop';
 process.env.PORTAL_JWT_SECRET = 'test-portal-secret-0123456789-abcdefghijkl';
 process.env.INTEGRATION_SECRET = 'test-integration-secret-0123456789-abcdefg';
 process.env.NODE_ENV = 'test';
+// API iNET GIẢ LẬP để kiểm thử tích hợp (không gọi API thật)
+const FAKE_API_PORT = 19000 + Math.floor(Math.random() * 900);
+process.env.COUPON_API_URL = 'http://127.0.0.1:' + FAKE_API_PORT + '/api/campaign/gencouponhalloween2026';
+process.env.COUPON_API_KEY = 'fake-token-for-test';
+process.env.COUPON_API_TIMEOUT = '1500';
+const fakeApi = { calls: [], mode: 'ok' };
+require('http').createServer((q, r) => {
+  let b = ''; q.on('data', (d) => { b += d; }); q.on('end', () => {
+    const body = JSON.parse(b || '{}');
+    fakeApi.calls.push({ token: q.headers['x-token-api'], body });
+    r.setHeader('Content-Type', 'application/json; charset=utf-8');
+    if (q.headers['x-token-api'] !== 'fake-token-for-test') return r.end(JSON.stringify({ status: 'error', message: 'Thiếu x-token-api' }));
+    if (![200, 450, 700].includes(body.point)) return r.end(JSON.stringify({ status: 'error', message: 'Trường point không chính xác, chỉ nhận 200|450|700' }));
+    if (fakeApi.mode === 'error') return r.end(JSON.stringify({ status: 'error', message: 'Lỗi tạm thời' }));
+    if (fakeApi.mode === 'slow') return; // không trả lời -> quá thời gian
+    const camp = { 200: [11213, 20], 450: [11212, 35], 700: [11211, 40] }[body.point];
+    r.end(JSON.stringify({ campaignId: camp[0], code: 'INET' + String(fakeApi.calls.length).padStart(6, '0'), status: 'approved', usedTimes: 0, description: body.description, promotionValue: camp[1], unit: 'percent', couponType: 'once' }));
+  });
+}).listen(FAKE_API_PORT, '127.0.0.1');
 
 const Engine = require('../shared/engine');
 const server = require('../server/index');
@@ -32,6 +51,7 @@ const db = require('../server/db');
 const sec = require('../server/security');
 const settings = require('../server/settings');
 const game = require('../server/game');
+const coupons = require('../server/coupons');
 
 const BASE = 'http://127.0.0.1:' + process.env.PORT;
 let passed = 0;
@@ -540,6 +560,65 @@ async function playSession(token, targetScore, opts) {
     const h = await api('GET', '/?userId=KH999&token=gia-mao');
     assert.strictEqual(h.status, 200);
     assert.strictEqual((await api('POST', '/api/auth/portal', { token: 'gia-mao' })).status, 401);
+  });
+
+  await step('API iNET: gửi đúng point theo mốc (Email 200 / Cloud 450 / Hosting 700), có token, description = email Portal; nhận mã từ trường code', async () => {
+    const s = JSON.parse(JSON.stringify(settings.current()));
+    s.coupons.provider = 'http';
+    assert.strictEqual(settings.save(s, 'test').ok, true);
+    const now = Math.floor(Date.now() / 1000);
+    const jwt = sec.signJwt({ sub: 'KH777', email: 'Khach.Hang@Example.com', iat: now, exp: now + 600 }, process.env.PORTAL_JWT_SECRET);
+    const tk = (await api('POST', '/api/auth/portal', { token: jwt })).data.accessToken;
+    fakeApi.calls.length = 0;
+    for (const [target, tier, point] of [[230, 'email', 200], [560, 'cloud', 450], [850, 'hosting', 700]]) {
+      db.run('UPDATE players SET turns = 3, turns_at = 0 WHERE ext_id = ?', 'KH777');
+      const r = await playSession(tk, target);
+      assert.strictEqual(r.fin.status, 200, JSON.stringify(r.fin.data));
+      const aw = r.fin.data.result.award;
+      assert.strictEqual(aw.tier.id, tier, 'điểm ' + r.fin.data.result.score);
+      await new Promise((x) => setTimeout(x, 300)); // máy chủ gọi API ngay sau khi kết thúc lượt (chạy nền)
+      const call = fakeApi.calls[fakeApi.calls.length - 1];
+      assert.strictEqual(call.body.point, point);
+      assert.strictEqual(call.token, 'fake-token-for-test');
+      assert.strictEqual(call.body.description, 'khach.hang@example.com');
+      assert.deepStrictEqual(Object.keys(call.body).sort(), ['description', 'point'], 'chỉ gửi point + description, không gửi % giảm');
+      const rv = await api('POST', '/api/coupons/' + aw.coupon.id + '/reveal', {}, { token: tk });
+      assert.ok(/^INET[0-9]{6}$/.test(rv.data.coupon.code), JSON.stringify(rv.data));
+    }
+    // token API không bao giờ xuống trình duyệt
+    for (const p of ['/', '/js/game.js', '/api/public/config']) assert.ok(!String(JSON.stringify((await api('GET', p)).data)).includes('fake-token-for-test'));
+  });
+
+  await step('API iNET lỗi (trả HTTP 200 nhưng status:error): không bịa mã, coupon chờ và tự thử lại; quá thời gian thì KHÔNG tự gọi lại (tránh sinh trùng)', async () => {
+    const tk = (await api('POST', '/api/auth/guest', { key: sec.randomToken(24) })).data.accessToken;
+    fakeApi.mode = 'error';
+    let r = await playSession(tk, 230);
+    let cid = r.fin.data.result.award.coupon.id;
+    await new Promise((x) => setTimeout(x, 300));
+    let c = db.get('SELECT status, code_enc, error FROM coupons WHERE id = ?', cid);
+    assert.strictEqual(c.status, 'pending'); assert.strictEqual(c.code_enc, null); assert.ok(/Lỗi tạm thời/.test(c.error));
+    assert.ok(/^HLW2026 [|] KH/.test(fakeApi.calls[fakeApi.calls.length - 1].body.description), 'chưa có email -> mã người chơi');
+    fakeApi.mode = 'ok';
+    await coupons.retryPending();
+    assert.strictEqual(db.get('SELECT status FROM coupons WHERE id = ?', cid).status, 'issued', 'tự thử lại thành công');
+    // quá thời gian
+    fakeApi.mode = 'slow';
+    r = await playSession(tk, 230);
+    cid = r.fin.data.result.award.coupon.id;
+    await new Promise((x) => setTimeout(x, 1800));
+    c = db.get('SELECT status, api_uncertain FROM coupons WHERE id = ?', cid);
+    assert.strictEqual(c.status, 'pending'); assert.strictEqual(c.api_uncertain, 1);
+    const before = fakeApi.calls.length;
+    fakeApi.mode = 'ok';
+    await coupons.retryPending();
+    const rv = await api('POST', '/api/coupons/' + cid + '/reveal', {}, { token: tk });
+    assert.strictEqual(fakeApi.calls.length, before, 'không tự gọi lại khi không chắc');
+    assert.notStrictEqual(rv.status, 200);
+    // Admin bấm "Tạo lại mã" thì mới gọi lại
+    await coupons.fulfill(cid, { force: true });
+    assert.strictEqual(db.get('SELECT status FROM coupons WHERE id = ?', cid).status, 'issued');
+    const s = JSON.parse(JSON.stringify(settings.current())); s.coupons.provider = 'mock'; settings.save(s, 'test');
+    db.run("DELETE FROM coupons WHERE provider = 'http'");
   });
 
   let cookie, csrf;

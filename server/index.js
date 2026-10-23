@@ -281,6 +281,7 @@ const server = http.createServer(async (req, res) => {
 setInterval(() => {
   try {
     game.sweepAbandoned();
+    coupons.retryPending().catch((e) => console.error('[coupon retry]', e.message));
     const now = Date.now();
     db.run('DELETE FROM auth_tokens WHERE expires_at < ?', now - 3600000);
     db.run('DELETE FROM admin_sessions WHERE expires_at < ?', now);

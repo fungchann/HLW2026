@@ -128,6 +128,7 @@ function loginWithPortalToken(req, token, hint) {
     db.run('INSERT INTO used_jti (jti, expires_at) VALUES (?, ?)', claims.jti, (claims.exp + 60) * 1000);
   }
   const p = upsert(claims.sub, false, now);
+  if (claims.email) db.run('UPDATE players SET email_enc = ? WHERE id = ?', sec.encrypt(claims.email), p.id);
   if (p.banned) throw new HttpError(403, 'banned', 'Tài khoản của bạn đã bị tạm khóa khỏi chương trình');
   const dev = deviceFrom(req, hint);
   const t = issueToken(p, req, dev);
