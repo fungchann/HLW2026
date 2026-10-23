@@ -181,6 +181,7 @@ table.t { width: 100%; border-collapse: collapse; font-size: 13px; }
 .t .num { text-align: right; }
 .t th { white-space: normal; min-width: 56px; }
 .t .id-cell { white-space: nowrap; }
+.t .email-cell { font-size: .82rem; color: var(--muted, #8a8f98); white-space: nowrap; }
 .t td.cell-tier { min-width: 150px; }
 .t tbody tr:last-child td { border-bottom: 0; }
 .t tbody tr.clickable { cursor: pointer; }

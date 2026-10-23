@@ -202,6 +202,30 @@ function pageArgs(query, sortable, defSort) {
 
 function canSeeCodes(admin) { return ROLES[admin.role] >= ROLES.manager; }
 
+// Email khách (lấy từ token Portal, lưu mã hoá). Chỉ "Quản trị cao nhất" thấy đầy đủ; vai trò khác chỉ thấy dạng che: qu***@i***.vn
+function canSeeEmail(admin) { return !!admin && admin.role === 'superadmin'; }
+function maskEmail(e) {
+  const at = e.lastIndexOf('@');
+  if (at < 1) return '***';
+  const user = e.slice(0, at), dom = e.slice(at + 1), dot = dom.lastIndexOf('.');
+  return user.slice(0, user.length > 3 ? 2 : 1) + '***@' + (dot > 0 ? dom.slice(0, 1) + '***' + dom.slice(dot) : '***');
+}
+function emailOf(row, admin) {
+  if (!row.email_enc) return null;
+  let e;
+  try { e = sec.decrypt(row.email_enc); } catch (err) { return null; }
+  return canSeeEmail(admin) ? e : maskEmail(e);
+}
+// tìm theo email (một phần) — chỉ Quản trị cao nhất; email mã hoá nên giải mã rồi lọc trong bộ nhớ
+function playerIdsByEmail(q) {
+  const needle = q.toLowerCase();
+  const ids = [];
+  for (const r of db.all('SELECT id, email_enc FROM players WHERE email_enc IS NOT NULL')) {
+    try { if (sec.decrypt(r.email_enc).toLowerCase().includes(needle)) ids.push(r.id); } catch (err) { /* bỏ qua */ }
+  }
+  return ids;
+}
+
 // ------------------------------------------------------------ người chơi
 const PLAYER_SORT = {
   ext_id: 'ext_id', first_play_at: 'first_play_at', last_play_at: 'last_play_at', total_sessions: 'total_sessions',
@@ -209,12 +233,16 @@ const PLAYER_SORT = {
   best_combo: 'best_combo', coupons: 'coupon_count', clicks: 'click_count', flagged: 'flagged_sessions'
 };
 
-function listPlayers(query) {
+function listPlayers(query, admin) {
   const a = pageArgs(query, PLAYER_SORT, 'last_play_at');
   const where = ['total_sessions > 0'];
   const params = [];
   const q = (query.get('q') || '').trim();
-  if (q) { where.push('ext_id LIKE ?'); params.push('%' + q.replace(/[%_]/g, '') + '%'); }
+  if (q) {
+    const byEmail = canSeeEmail(admin) ? playerIdsByEmail(q) : [];
+    where.push('(ext_id LIKE ?' + (byEmail.length ? ' OR id IN (' + byEmail.map(Number).join(',') + ')' : '') + ')');
+    params.push('%' + q.replace(/[%_]/g, '') + '%');
+  }
   if (query.get('test') !== '1') where.push('is_test = 0');
   const f = query.get('filter');
   if (f === 'coupon') where.push('coupon_count > 0');
@@ -246,7 +274,7 @@ function listPlayers(query) {
   return {
     total, page: a.page, size: a.size, sort: a.sort, dir: a.dir.toLowerCase(),
     rows: rows.map((r) => ({
-      id: r.id, extId: r.ext_id, test: !!r.is_test, firstPlayAt: r.first_play_at, lastPlayAt: r.last_play_at,
+      id: r.id, extId: r.ext_id, email: emailOf(r, admin), test: !!r.is_test, firstPlayAt: r.first_play_at, lastPlayAt: r.last_play_at,
       sessions: r.total_sessions, done: r.done_sessions, bestScore: r.best_score,
       avgScore: r.done_sessions ? Math.round(r.sum_score / r.done_sessions) : 0, bestCombo: r.best_combo,
       coupons: couponMap[r.id] || [], clicks: clickMap[r.id] || [], redeemed: r.redeemed_count,
@@ -266,7 +294,7 @@ function playerDetail(id, admin) {
   const days = db.get('SELECT COUNT(DISTINCT day) n FROM sessions WHERE player_id = ?', id).n;
   return {
     player: {
-      id: p.id, extId: p.ext_id, test: !!p.is_test, createdAt: p.created_at, firstPlayAt: p.first_play_at, lastPlayAt: p.last_play_at,
+      id: p.id, extId: p.ext_id, email: emailOf(p, admin), emailFull: canSeeEmail(admin), test: !!p.is_test, createdAt: p.created_at, firstPlayAt: p.first_play_at, lastPlayAt: p.last_play_at,
       sessions: p.total_sessions, done: p.done_sessions, bestScore: p.best_score, bestCombo: p.best_combo,
       avgScore: p.done_sessions ? Math.round(p.sum_score / p.done_sessions) : 0, bombDeaths: p.bomb_deaths,
       flagged: p.flagged_sessions, banned: !!p.banned, banReason: p.ban_reason, lockedUntil: p.locked_until > Date.now() ? p.locked_until : 0, device: p.device_last, activeDays: days,
@@ -373,7 +401,7 @@ function exportCsv(kind, query, admin) {
         (SELECT GROUP_CONCAT(tier_id || ':' || n, ' ') FROM (SELECT tier_id, COUNT(*) n FROM events e WHERE e.player_id = p.id AND e.type = 'register_click' GROUP BY tier_id)) clk
       FROM players p WHERE total_sessions > 0 AND (is_test = 0 OR ? = 1) ORDER BY last_play_at DESC`, T);
     return util.toCsv([
-      { label: 'ID người chơi', key: 'ext_id' }, { label: 'Lần đầu chơi', get: (x) => util.fmtVN(x.first_play_at) },
+      { label: 'ID người chơi', key: 'ext_id' }, { label: 'Email', get: (x) => emailOf(x, admin) || '' }, { label: 'Lần đầu chơi', get: (x) => util.fmtVN(x.first_play_at) },
       { label: 'Lần chơi gần nhất', get: (x) => util.fmtVN(x.last_play_at) }, { label: 'Tổng số lượt', key: 'total_sessions' },
       { label: 'Điểm cao nhất', key: 'best_score' }, { label: 'Điểm trung bình', get: (x) => x.done_sessions ? Math.round(x.sum_score / x.done_sessions) : 0 },
       { label: 'Combo cao nhất', key: 'best_combo' }, { label: 'Voucher đã nhận', key: 'cps' }, { label: 'Sản phẩm đã click', key: 'clk' },
@@ -395,10 +423,10 @@ function exportCsv(kind, query, admin) {
     ], rows);
   }
   if (kind === 'coupons') {
-    const rows = db.all(`SELECT c.*, p.ext_id FROM coupons c JOIN players p ON p.id = c.player_id
+    const rows = db.all(`SELECT c.*, p.ext_id, p.email_enc FROM coupons c JOIN players p ON p.id = c.player_id
       WHERE c.created_at BETWEEN ? AND ? AND (c.is_test = 0 OR ? = 1) ORDER BY c.created_at DESC`, r.from, r.to, T);
     return util.toCsv([
-      { label: 'ID coupon', key: 'id' }, { label: 'ID người chơi', key: 'ext_id' }, { label: 'Mốc', key: 'tier_id' }, { label: 'Voucher', key: 'label' },
+      { label: 'ID coupon', key: 'id' }, { label: 'ID người chơi', key: 'ext_id' }, { label: 'Email', get: (x) => emailOf(x, admin) || '' }, { label: 'Mốc', key: 'tier_id' }, { label: 'Voucher', key: 'label' },
       { label: 'Mã', get: (x) => { const c = coupons.decryptSafe(x.code_enc); return c ? (canSeeCodes(admin) ? c : coupons.maskCode(c)) : ''; } },
       { label: 'Trạng thái', key: 'status' }, { label: 'Ngày cấp', get: (x) => util.fmtVN(x.created_at) }, { label: 'Hạn dùng', get: (x) => util.fmtVN(x.expires_at) },
       { label: 'Đã xem mã', get: (x) => util.fmtVN(x.revealed_at) }, { label: 'Đã copy', get: (x) => util.fmtVN(x.copied_at) },
@@ -447,7 +475,7 @@ function routes(router) {
   });
 
   // Người chơi
-  R('GET', '/api/admin/players', 'viewer', (req, res, p, query) => listPlayers(query));
+  R('GET', '/api/admin/players', 'viewer', (req, res, p, query) => listPlayers(query, req.admin));
   R('GET', '/api/admin/players/:id', 'viewer', (req, res, p) => playerDetail(util.toInt(p.id, 0), req.admin));
   R('POST', '/api/admin/players/:id/ban', 'manager', async (req, res, p) => {
     const b = await readJson(req);
@@ -630,7 +658,7 @@ function routes(router) {
   router.get('/api/admin/export/:kind', (req, res, p, query) => {
     requireAdmin(req, 'manager');
     const csv = exportCsv(p.kind, query, req.admin);
-    audit(req, 'export', p.kind);
+    audit(req, 'export', p.kind, canSeeEmail(req.admin) && (p.kind === 'players' || p.kind === 'coupons') ? { email: 'full' } : undefined);
     send(res, 200, csv, {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': 'attachment; filename="hlw2026-' + p.kind + '-' + util.vnParts(Date.now()).day + '.csv"',

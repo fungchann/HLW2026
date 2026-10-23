@@ -635,7 +635,7 @@
 
   // ================================================================ NGƯỜI CHƠI
   function pagePlayers() {
-    var extra = '<label class="field grow"><span>Tìm ID người chơi</span><input type="search" id="f-q" placeholder="Nhập ID..."></label>' +
+    var extra = '<label class="field grow"><span>Tìm ID người chơi' + (can('superadmin') ? ' / email' : '') + '</span><input type="search" id="f-q" placeholder="' + (can('superadmin') ? 'Nhập ID hoặc email...' : 'Nhập ID...') + '"></label>' +
       '<label class="field"><span>Lọc</span><select id="f-filter"><option value="">Tất cả</option><option value="coupon">Đã nhận voucher</option><option value="nocoupon">Chưa có voucher</option>' +
       '<option value="redeemed">Đã dùng coupon</option><option value="returning">Quay lại ≥ 2 ngày</option><option value="flagged">Có lượt nghi ngờ</option><option value="banned">Đang bị khoá</option></select></label>' +
       '<label class="field"><span>Điểm cao nhất</span><select id="f-min"><option value="0">Mọi mức</option>' + S.meta.tiers.filter(function (t) { return t.enabled; }).map(function (t) { return '<option value="' + t.score + '">≥ ' + t.score + '</option>'; }).join('') + '</select></label>' +
@@ -650,7 +650,7 @@
         $('f-min').addEventListener('change', reload);
       },
       columns: [
-        { key: 'extId', label: 'ID người chơi', sort: 'ext_id', render: function (r) { return '<b class="id-cell">' + esc(r.extId) + '</b>' + (r.test ? ' <span class="tag">test</span>' : '') + (r.banned ? ' <span class="tag bad">khoá</span>' : '') + (r.flagged ? ' <span class="tag warn">nghi ngờ ' + r.flagged + '</span>' : ''); } },
+        { key: 'extId', label: 'ID người chơi', sort: 'ext_id', render: function (r) { return '<b class="id-cell">' + esc(r.extId) + '</b>' + (r.email ? '<br><span class="email-cell">' + esc(r.email) + '</span>' : '') + (r.test ? ' <span class="tag">test</span>' : '') + (r.banned ? ' <span class="tag bad">khoá</span>' : '') + (r.flagged ? ' <span class="tag warn">nghi ngờ ' + r.flagged + '</span>' : ''); } },
         { key: 'firstPlayAt', label: 'Lần đầu chơi', sort: 'first_play_at', render: function (r) { return '<span class="nowrap">' + fmtDT(r.firstPlayAt) + '</span>'; } },
         { key: 'lastPlayAt', label: 'Lần chơi gần nhất', sort: 'last_play_at', render: function (r) { return '<span class="nowrap">' + fmtDT(r.lastPlayAt) + '</span>'; } },
         { key: 'sessions', label: 'Tổng lượt', sort: 'total_sessions', num: true, render: function (r) { return fmtNum(r.sessions); } },
@@ -672,7 +672,8 @@
       var p = d.player;
       $('drawer-title').textContent = 'Người chơi ' + p.extId;
       var html = '<dl class="dl">' +
-        dd('ID người chơi', esc(p.extId) + (p.test ? ' (test)' : '')) + dd('Lần đầu vào game', fmtDT(p.createdAt)) + dd('Lần đầu chơi', fmtDT(p.firstPlayAt)) +
+        dd('ID người chơi', esc(p.extId) + (p.test ? ' (test)' : '')) +
+        dd('Email', p.email ? esc(p.email) + (p.emailFull ? '' : ' <span class="hint">(chỉ Quản trị cao nhất xem được đầy đủ)</span>') : '<span class="hint">— (chưa có, chơi khách hoặc Portal không gửi email)</span>') + dd('Lần đầu vào game', fmtDT(p.createdAt)) + dd('Lần đầu chơi', fmtDT(p.firstPlayAt)) +
         dd('Lần chơi gần nhất', fmtDT(p.lastPlayAt)) + dd('Tổng lượt', fmtNum(p.sessions)) + dd('Điểm cao nhất', fmtNum(p.bestScore)) +
         dd('Điểm trung bình', fmtNum(p.avgScore)) + dd('Combo cao nhất', 'x' + p.bestCombo) + dd('Chết vì bom', fmtNum(p.bombDeaths)) +
         dd('Số ngày tham gia', fmtNum(p.activeDays)) + dd('Thiết bị gần nhất', DEVICE[p.device] || '—') +

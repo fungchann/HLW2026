@@ -674,7 +674,7 @@ async function playSession(token, targetScore, opts) {
     assert.strictEqual(r.status, 400);
   });
 
-  await step('Admin: phân quyền — tài khoản "Chỉ xem" không được sửa cấu hình', async () => {
+  await step('Admin: phân quyền — tài khoản "Chỉ xem" không được sửa cấu hình, chỉ thấy email khách dạng che', async () => {
     const c = await api('POST', '/api/admin/admins', { username: 'viewer1', role: 'viewer' }, { cookie, csrf });
     assert.strictEqual(c.status, 200);
     const l = await api('POST', '/api/admin/login', { username: 'viewer1', password: c.data.tempPassword });
@@ -686,6 +686,16 @@ async function playSession(token, targetScore, opts) {
     const list = await api('GET', '/api/admin/coupons?all=1&test=1', undefined, { cookie: vc });
     assert.ok(list.data.rows[0].code.includes('****'), 'viewer chỉ thấy mã đã che');
     assert.strictEqual((await api('POST', '/api/admin/coupons/' + couponId + '/code', {}, { cookie: vc, csrf: vcsrf })).status, 403);
+    // email khách: "Chỉ xem" thấy dạng che, không tìm được theo email; Quản trị cao nhất thấy đầy đủ và tìm được
+    const vp = await api('GET', '/api/admin/players?test=1&q=KH777', undefined, { cookie: vc });
+    assert.strictEqual(vp.data.rows[0].email, 'kh***@e***.com');
+    assert.ok(!JSON.stringify(vp.data).includes('khach.hang'));
+    const vd = await api('GET', '/api/admin/players/' + vp.data.rows[0].id, undefined, { cookie: vc });
+    assert.ok(!JSON.stringify(vd.data).includes('khach.hang') && vd.data.player.email === 'kh***@e***.com');
+    assert.strictEqual((await api('GET', '/api/admin/players?test=1&q=example.com', undefined, { cookie: vc })).data.total, 0);
+    const sp = await api('GET', '/api/admin/players?test=1&q=example.com', undefined, { cookie });
+    assert.strictEqual(sp.data.total, 1);
+    assert.strictEqual(sp.data.rows[0].email, 'khach.hang@example.com');
   });
 
   await step('Admin: danh sách coupon luôn che mã (kể cả quản lý); xem mã đầy đủ phải bấm riêng và được ghi nhật ký', async () => {
