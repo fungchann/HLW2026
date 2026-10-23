@@ -371,6 +371,20 @@ function migrate() {
   migrateTapRate();
   migrateHammerBonus();
   migrateTiers500800();
+  migrateCouponProvider();
+}
+// Máy chủ đã có token API iNET (COUPON_API_KEY) mà vẫn đang dùng mã giả lập -> chuyển 1 lần sang sinh mã thật.
+// Sau đó Admin vẫn đổi lại được trong Cấu hình > Coupon.
+function migrateCouponProvider() {
+  const env = require('./env');
+  if (!env.COUPON_API_KEY || db.metaGet('mig_provider_http')) return;
+  const next = JSON.parse(JSON.stringify(load().settings));
+  if (next.coupons.provider === 'mock') {
+    next.coupons.provider = 'http';
+    const r = save(next, 'system', 'Đã có token API iNET: chuyển nguồn mã coupon sang API iNET (mã thật)');
+    if (!r.ok) console.error('[settings] migrate provider failed', r.errors);
+  }
+  db.metaSet('mig_provider_http', String(Date.now()));
 }
 // Mốc voucher mới: Cloud 450 -> 500, Hosting 700 -> 800 (chỉ đổi nếu admin chưa tự chỉnh khác)
 function migrateTiers500800() {

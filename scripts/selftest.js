@@ -138,6 +138,11 @@ async function playSession(token, targetScore, opts) {
 (async function main() {
   await new Promise((r) => server.once('listening', r).listening ? r() : null);
   await new Promise((r) => setTimeout(r, 200));
+  { // có token giả nên máy chủ tự chuyển sang API thật; các bài đầu dùng mã giả lập
+    const s0 = JSON.parse(JSON.stringify(settings.current()));
+    assert.strictEqual(s0.coupons.provider, 'http', 'có COUPON_API_KEY -> tự chuyển sang API iNET');
+    s0.coupons.provider = 'mock'; settings.save(s0, 'test');
+  }
   console.log('Self-test trên ' + BASE + ' (DB tạm: ' + TMP + ')');
 
   // ---------------------------------------------------------- engine
