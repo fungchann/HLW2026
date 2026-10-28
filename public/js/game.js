@@ -822,17 +822,16 @@
   }
   document.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') Bot.moves++; }, { passive: true });
   function checkTap(e) {
-    // trang không được chọn mà vẫn nhận cú đập -> có thứ khác đang bấm hộ
-    var focused = true;
-    try { focused = document.hasFocus(); } catch (x) { /* bỏ qua */ }
-    if (!focused && ++Bot.unfocused >= 3) { botDetected('unfocused'); return; }
+    // Game nhúng trong iframe Portal: bấm ra ngoài (menu, khung chat Portal...) làm iframe mất focus, và cú đập trên bàn
+    // (đã preventDefault) không tự lấy lại focus -> KHÔNG coi là chơi hộ, chỉ lấy lại focus cho trang game.
+    try { if (!document.hasFocus()) window.focus(); } catch (x) { /* bỏ qua */ }
     if (e.pointerType !== 'mouse') return;
     // chỉ xét những lần CHUYỂN sang ô khác (đập liên tiếp tại chỗ thì người thật cũng không cần di chuột).
     // Người thật kéo chuột qua nhiều điểm; script/AI bấm theo toạ độ thì "dịch chuyển tức thời" (0–1 sự kiện di chuyển)
     var far = Bot.tapX === null || Math.abs(e.clientX - Bot.tapX) > 40 || Math.abs(e.clientY - Bot.tapY) > 40;
     if (far) { Bot.mouseTaps++; if (Bot.moves <= 1) Bot.jumps++; }
     Bot.moves = 0; Bot.tapX = e.clientX; Bot.tapY = e.clientY;
-    if (Bot.jumps >= 4 && Bot.jumps / Bot.mouseTaps >= 0.6) botDetected('mouse_jump');
+    if (Bot.jumps >= 6 && Bot.jumps / Bot.mouseTaps >= 0.75) botDetected('mouse_jump');
   }
   setInterval(function () { if (G.state === 'playing' && botProbe()) botDetected(Bot.reason); }, 1500);
 
