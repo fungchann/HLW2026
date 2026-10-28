@@ -147,6 +147,25 @@ async function playSession(token, targetScore, opts) {
   console.log('Self-test trên ' + BASE + ' (DB tạm: ' + TMP + ')');
 
   // ---------------------------------------------------------- engine
+  await step('Chống gian lận: mạng chập chờn KHÔNG bị tính là "đồng hồ chậm"; game bị làm chậm 0.6x vẫn bị phát hiện', () => {
+    // đồng bộ mỗi 3s, mỗi lần chỉ 1 request (xếp hàng), thời gian game đo lúc gửi, máy chủ ghi lúc nhận
+    function syncs(speed, lat) {
+      const out = [];
+      let free = 0;
+      for (let tk = 3000, i = 0; tk <= 45000; tk += 3000, i++) {
+        const send = Math.max(tk, free), l = lat(i);
+        free = send + l;
+        out.push([send + l, Math.round(send * speed), 0]);
+      }
+      return out;
+    }
+    const jitter = (i) => (i % 3 === 1 ? 5000 : 120); // cứ 3 lần thì 1 lần trễ 5 giây
+    assert.ok(game.analyzeClock(syncs(1, jitter)).ratio >= 0.95, 'người thật mạng yếu: ' + game.analyzeClock(syncs(1, jitter)).ratio);
+    assert.ok(game.analyzeClock(syncs(1, () => 100)).ratio >= 0.99);
+    assert.ok(game.analyzeClock(syncs(0.6, () => 100)).ratio < 0.7, 'hack 0.6x');
+    assert.ok(game.analyzeClock(syncs(0.6, jitter)).ratio < 0.8, 'hack 0.6x + mạng yếu');
+  });
+
   await step('Engine tất định: cùng seed + thao tác -> cùng kết quả', () => {
     const cfg = settings.gameConfig(settings.defaults());
     for (let i = 0; i < 200; i++) {

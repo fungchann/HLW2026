@@ -203,16 +203,36 @@ function liveCheck(ctx) {
   if (a.n >= 8 && a.pw >= 30000 && a.ratio < ac.slowClockRatio) invalidate(ctx, 'slow_clock');
 }
 
+// Đồng hồ game có bị làm chậm không (hack làm chậm game để dễ đập)? So "thời gian thật − thời gian game" ở đầu và cuối mỗi
+// đoạn chơi liên tục (không tạm dừng, không mất kết nối > 15s). Lấy giá trị NHỎ NHẤT trong 1/3 đầu và 1/3 cuối đoạn, tức các
+// lần đồng bộ đến nhanh nhất (tốc độ trôi tính giữa 2 điểm đó), nên mạng chập chờn / gói tin đến trễ không làm sai kết quả (trước đây khách mạng yếu bị bắt nhầm).
+// Người thật: độ lệch gần như không đổi -> tỉ lệ ~1. Game bị làm chậm 0.7x: độ lệch tăng dần -> tỉ lệ ~0.7–0.8.
 function analyzeClock(sy) {
-  let pw = 0, pg = 0, n = 0;
-  for (let i = 1; i < sy.length; i++) {
-    const a = sy[i - 1], b = sy[i];
-    if (a[2] || b[2]) continue;          // có tạm dừng trong khoảng này
-    const dw = b[0] - a[0], dg = b[1] - a[1];
-    if (dw < 1000 || dw > 15000) continue; // quá ngắn hoặc tab bị treo / mất mạng
-    pw += dw; pg += dg; n++;
+  const segs = [];
+  let cur = [];
+  for (const p of sy) {
+    const prev = cur[cur.length - 1];
+    if (p[2] || (prev && (p[0] - prev[0] > 15000 || p[0] < prev[0]))) {
+      if (cur.length) segs.push(cur);
+      cur = p[2] ? [] : [p];
+      continue;
+    }
+    cur.push(p);
   }
-  return { pw, pg, n, ratio: pw > 0 ? pg / pw : 1 };
+  if (cur.length) segs.push(cur);
+  let pw = 0, drift = 0, n = 0;
+  for (const seg of segs) {
+    if (seg.length < 4) continue;
+    const k = Math.max(2, Math.floor(seg.length / 3));
+    // điểm có độ lệch nhỏ nhất ở 1/3 đầu và 1/3 cuối; tốc độ trôi = chênh lệch / khoảng thời gian giữa 2 điểm đó
+    const lo = (part) => part.reduce((m, p) => (p[0] - p[1] < m[0] - m[1] ? p : m));
+    const a = lo(seg.slice(0, k)), b = lo(seg.slice(-k));
+    if (b[0] - a[0] < 5000) continue;
+    drift += (b[0] - b[1]) - (a[0] - a[1]);
+    pw += b[0] - a[0];
+    n += seg.length;
+  }
+  return { pw, n, ratio: pw > 0 ? Math.min(1, 1 - drift / pw) : 1 };
 }
 
 function ownCtx(p, sid) {
@@ -425,4 +445,4 @@ function liveCount() {
   return db.get("SELECT COUNT(*) n FROM sessions WHERE status = 'active' AND last_sync_at >= ? AND is_test = 0", since).n;
 }
 
-module.exports = { start, sync, finish, abandon, activeFor, finalize, sweepAbandoned, liveCount, resultFor, parseEv, parseSync, REASON_TEXT, analyze };
+module.exports = { start, sync, finish, abandon, activeFor, finalize, sweepAbandoned, liveCount, resultFor, parseEv, parseSync, REASON_TEXT, analyze, analyzeClock };
