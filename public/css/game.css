@@ -552,6 +552,10 @@ button, input { font: inherit; }
 .toast.good .ic { color: var(--slime-d); }
 .toast.bad { background: #ffd9de; }
 .toast small { display: block; font-weight: 600; font-size: .85rem; opacity: .8; }
+.toasts.in-play { gap: 6px; }
+.toasts.in-play .toast { gap: 8px; padding: 7px 10px; border-radius: 12px; font-size: .86rem; box-shadow: 0 4px 0 var(--ink); }
+.toasts.in-play .toast .ic { width: 20px; height: 20px; }
+.toasts.in-play .toast small { font-size: .74rem; }
 
 .mascot-art, .mascot-img { width: 100%; height: auto; display: block; overflow: visible; filter: drop-shadow(0 8px 0 rgba(0, 0, 0, .25)); }
 

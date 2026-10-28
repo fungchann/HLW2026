@@ -67,10 +67,32 @@
     var el = document.createElement('div');
     el.className = 'toast' + (kind ? ' ' + kind : '');
     el.innerHTML = Art.ui(icon || (kind === 'bad' ? 'close' : 'gift')) + '<div><div>' + esc(title) + '</div>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>';
+    placeToasts(wrap);
     wrap.appendChild(el);
     while (wrap.children.length > 3) wrap.removeChild(wrap.firstChild);
     setTimeout(function () { el.classList.add('out'); setTimeout(function () { el.remove(); }, 300); }, sub ? 3600 : 2400);
   }
+
+  // Đang chơi: thông báo không được che bàn 9 lỗ. Màn rộng -> đặt vào khoảng trống bên phải bàn;
+  // không đủ chỗ -> nằm cuối cột điểm bên trái (màn ngang) hoặc trên cùng, phía trên bàn (màn dọc). Bản thu gọn.
+  function placeToasts(wrap) {
+    var st = wrap.style;
+    st.left = st.right = st.top = st.bottom = st.width = st.transform = '';
+    wrap.classList.remove('in-play');
+    if (!app.classList.contains('is-playing')) return;
+    wrap.classList.add('in-play');
+    var b = $('board').getBoundingClientRect(), hud = document.querySelector('.hud').getBoundingClientRect();
+    var right = window.innerWidth - b.right - 24;
+    if (right >= 180) {
+      st.left = Math.round(b.right + 12) + 'px'; st.top = Math.round(b.top + 8) + 'px';
+      st.width = Math.round(Math.min(right, 320)) + 'px'; st.transform = 'none';
+    } else if (hud.right <= b.left) {
+      st.left = Math.round(hud.left) + 'px'; st.top = 'auto'; st.bottom = Math.round(window.innerHeight - b.bottom + 8) + 'px';
+      st.width = Math.round(hud.width) + 'px'; st.transform = 'none';
+    }
+  }
+
+  if (location.hostname === 'localhost') window.__toast = toast; // chỉ để kiểm thử trên máy dev
 
   // ================================================================ hộp thoại
   var modalStack = [];
